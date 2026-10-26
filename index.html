@@ -4,9 +4,12 @@
   <meta charset="UTF-8">
   <title>Mauli Graphics - Mobile Camera Portal</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+    * { box-sizing: border-box; font-family: 'Noto Sans Devanagari', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
     body { background: #12131c; color: #fff; margin: 0; padding: 0; }
     .header { background: #1f2133; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2f324d; position: sticky; top: 0; z-index: 10; }
     .header h1 { font-size: 16px; margin: 0; color: #f59e0b; letter-spacing: 0.5px; }
@@ -18,6 +21,7 @@
     .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer; transition: 0.2s; }
     .btn-login { background: #2563eb; color: #fff; }
     .btn-logout { background: #ef4444; color: #fff; padding: 6px 12px; font-size: 12px; border-radius: 6px; border: none; cursor: pointer; }
+    .btn-add-student { background: #10b981; color: #fff; font-size: 13px; font-weight: bold; padding: 8px 12px; border-radius: 6px; border: none; cursor: pointer; display: flex; align-items: center; gap: 5px; }
 
     /* Controls & Dynamic Filters Section */
     .filter-section { background: #1a1c29; border: 1px solid #2c3049; border-radius: 10px; padding: 12px; margin-bottom: 14px; }
@@ -61,7 +65,7 @@
     .btn-snap { width: 72px; height: 72px; background: #fff; border: 4px solid #2563eb; border-radius: 50%; outline: none; box-shadow: 0 0 20px rgba(0,0,0,0.6); cursor: pointer; }
     .btn-snap:active { transform: scale(0.92); }
 
-    /* Edit Modal Box */
+    /* Edit / Add Modal Box */
     #editModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.82); z-index: 200; padding: 20px; align-items: center; justify-content: center; }
     .modal-content { background: #1f2133; padding: 20px; border-radius: 12px; max-width: 480px; width: 100%; max-height: 85vh; overflow-y: auto; border: 1px solid #3b3f5c; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
     .modal-content h3 { color: #f59e0b; margin-top: 0; margin-bottom: 15px; font-size: 17px; }
@@ -78,10 +82,10 @@
   <!-- 1. LOGIN SCREEN -->
   <div id="loginView">
     <h2 style="color: #f59e0b; margin-top: 0;">School Login</h2>
-    <p style="color: #9ca3af; font-size: 13px; margin-bottom: 25px;">फोटो काढण्यासाठी Job ID आणि Password टाका</p>
+    <p style="color: #9ca3af; font-size: 13px; margin-bottom: 25px;">फोटो व माहिती भरण्यासाठी Job ID आणि Password टाका</p>
     <input type="text" id="inputJobId" class="input-box" placeholder="Job ID (उदा. 361248)" inputmode="numeric">
     <input type="password" id="inputPin" class="input-box" placeholder="Login Password" inputmode="numeric">
-    <button class="btn btn-login" onclick="login()">Login Kara</button>
+    <button class="btn btn-login" onclick="login()">Login करा</button>
   </div>
 
   <!-- 2. STUDENT LIST SCREEN -->
@@ -91,35 +95,34 @@
         <h3 id="schoolHeading" style="margin:0; font-size: 17px; color:#f3f4f6;">School Name</h3>
         <span id="counterText" style="font-size:12px; color:#9ca3af;">0/0 पूर्ण</span>
       </div>
-      <button class="btn-logout" onclick="logout()">बाहेर पडा</button>
+      <div style="display:flex; gap:8px;">
+        <button class="btn-add-student" onclick="openAddStudentModal()">➕ नवीन जोडा</button>
+        <button class="btn-logout" onclick="logout()">बाहेर पडा</button>
+      </div>
     </div>
 
     <!-- FILTER & SEARCH BAR -->
     <div class="filter-section">
-      <input type="text" id="searchInput" class="input-box" style="margin-bottom:0;" placeholder="🔍 Roll No किंवा नावाने शोधा..." oninput="applyAllFilters()">
+      <input type="text" id="searchInput" class="input-box" style="margin-bottom:0;" placeholder="🔍 रोल नंबर किंवा नावाने शोधा..." oninput="applyAllFilters()">
       
-      <!-- Base Filter Row -->
       <div style="display:flex; gap:8px; margin-top:8px;">
         <select id="statusFilter" class="filter-select" onchange="applyAllFilters()">
           <option value="ALL">सर्व स्थिती (All Status)</option>
           <option value="PENDING">बाकी असलेले (Pending)</option>
           <option value="DONE">पूर्ण झालेले (Done)</option>
         </select>
-        <button class="filter-toggle-btn" style="flex:1; margin-top:0;" onclick="toggleColumnPicker()">⚙️ सानुकूल फिल्टर्स (Customize Columns)</button>
+        <button class="filter-toggle-btn" style="flex:1; margin-top:0;" onclick="toggleColumnPicker()">⚙️ सानुकूल फिल्टर्स (Columns)</button>
       </div>
 
-      <!-- Column Checkbox Chooser -->
       <div id="columnPicker" class="column-picker">
-        <div style="font-size:12px; color:#f59e0b; font-weight:bold; margin-bottom:8px;">फिल्टर करण्यासाठी कॉलम निवडा (Tick kara):</div>
+        <div style="font-size:12px; color:#f59e0b; font-weight:bold; margin-bottom:8px;">फिल्टर करण्यासाठी कॉलम निवडा (Tick करा):</div>
         <div id="checkboxContainer"></div>
       </div>
 
-      <!-- Container where active checked dropdowns will appear -->
       <div id="dynamicDropdownsContainer" class="dynamic-dropdown-grid"></div>
 
-      <!-- Live Total Summary -->
       <div class="total-counter-bar">
-        <div><b>एकूण निकाल:</b> <span id="filteredCount" style="color:#38bdf8; font-weight:bold;">0</span> विद्यार्थी सापडले</div>
+        <div><b>एकूण निकाल:</b> <span id="filteredCount" style="color:#38bdf8; font-weight:bold;">0</span> विद्यार्थी</div>
         <div style="color:#10b981;"><b>पूर्ण:</b> <span id="filteredDoneCount">0</span> | <span style="color:#f87171;"><b>बाकी:</b> <span id="filteredPendingCount">0</span></span></div>
       </div>
     </div>
@@ -136,7 +139,6 @@
 
     <video id="videoElement" autoplay playsinline></video>
 
-    <!-- Face Guide Frame -->
     <div class="face-guide-container">
       <div class="face-guide-box" id="guideBox"></div>
     </div>
@@ -146,13 +148,13 @@
     </div>
   </div>
 
-  <!-- 4. EDIT STUDENT DATA MODAL -->
+  <!-- 4. EDIT / ADD MODAL -->
   <div id="editModal">
     <div class="modal-content">
-      <h3>विद्यार्थ्याची माहिती बदला (Edit)</h3>
+      <h3 id="modalTitle">विद्यार्थ्याची माहिती बदला (Edit)</h3>
       <div id="dynamicEditFields"></div>
       <div style="display: flex; gap: 10px; margin-top: 15px;">
-        <button class="btn" style="background:#10b981; flex:1;" onclick="saveStudentData()">✓ Save Kara</button>
+        <button class="btn" style="background:#10b981; flex:1;" onclick="saveStudentData()">✓ Save करा</button>
         <button class="btn" style="background:#ef4444; flex:1;" onclick="closeEditModal()">Cancel</button>
       </div>
     </div>
@@ -165,7 +167,7 @@
   // SUPABASE CONFIGURATION - MAULI CARDS
   const SUPABASE_URL = "https://cqukjscpdfrfijgqdlyx.supabase.co";
   
-  // NOTE: Khali tumchi ti eyJ... anon key verify kara:
+  // NOTE: Khali tumchi ti eyJ... anon key paste kara:
   const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNxdWtqc2NwZGZyZmlqZ3FkbHl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI5ODQzNTIsImV4cCI6MjEwODU2MDM1Mn0.a0v2VZQDqU4wlO1Cj_W6osQkgE7t6IChSqcInLnpX84";
 
   const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -178,15 +180,15 @@
   let activeStudent = null;
   let mediaStream = null;
   let editingStudentId = null;
+  let isNewStudentMode = false;
 
-  // AUTO DETECT STUDENT NAME
+  // AUTO DETECT STUDENT NAME (Marathi Unicode + English Support)
   function getStudentDisplayName(data, srNo) {
-    if (!data) return "Student #" + srNo;
+    if (!data) return "विद्यार्थी #" + srNo;
     let possible = [
+      "विद्यार्थ्याचे पूर्ण नाव", "पूर्ण नाव", "विद्यार्थ्याचे नाव", "नाव", "विद्यार्थी नाव",
       "Full Name", "Full_Name", "FullName", "full name", "FULL NAME",
-      "Name", "NAME", "name", 
-      "Student Name", "Student_Name", "StudentName",
-      "Vidyarthi Naav", "Vidyarthi", "Student"
+      "Name", "NAME", "name", "Student Name", "Student_Name", "StudentName"
     ];
     for (let p of possible) {
       if (data[p] && data[p].toString().trim() !== "") {
@@ -194,11 +196,12 @@
       }
     }
     for (let k in data) {
-      if (k.toLowerCase().includes("name") && data[k] && data[k].toString().trim() !== "") {
+      let low = k.toLowerCase();
+      if ((low.includes("नाव") || low.includes("name")) && data[k] && data[k].toString().trim() !== "") {
         return data[k].toString().trim();
       }
     }
-    return "Student #" + srNo;
+    return "विद्यार्थी #" + srNo;
   }
 
   // LOGIN FUNCTION
@@ -231,38 +234,39 @@
   async function fetchStudents() {
     const { data: sList, error: sErr } = await client.from('students').select('*').eq('project_id', currentProject.id).order('sr_no', { ascending: true });
     if(sErr) {
-      alert("विद्यार्थ्यांची यादी लोड करताना अडचण: " + sErr.message);
+      alert("माहिती लोड करताना अडचण: " + sErr.message);
       return;
     }
 
     studentsData = sList;
 
-    // Detect 1st row columns from student_data
-    if (studentsData.length > 0 && studentsData[0].student_data) {
-      availableColumns = Object.keys(studentsData[0].student_data).filter(col => {
+    if (currentProject.columns && currentProject.columns.length > 0) {
+      availableColumns = currentProject.columns.filter(col => {
         let low = col.toLowerCase();
-        // Ignore Photo filename kiva direct large text if not needed
-        return !low.includes("photo") && !low.includes("address");
+        return !low.includes("photo") && !low.includes("address") && !low.includes("पत्ता");
       });
+    } else if (studentsData.length > 0 && studentsData[0].student_data) {
+      availableColumns = Object.keys(studentsData[0].student_data);
     }
 
     buildColumnCheckboxes();
     applyAllFilters();
   }
 
-  // TOGGLE COLUMN PICKER BOX
   function toggleColumnPicker() {
     let p = document.getElementById('columnPicker');
     p.style.display = (p.style.display === 'block') ? 'none' : 'block';
   }
 
-  // BUILD CUSTOM CHECKBOXES FOR ALL 1ST ROW COLUMNS
   function buildColumnCheckboxes() {
     let container = document.getElementById('checkboxContainer');
     container.innerHTML = "";
 
-    // Default select STD / Standard if exists
-    let defaultPicked = availableColumns.find(c => ["std", "standard", "class"].includes(c.toLowerCase()));
+    let defaultPicked = availableColumns.find(c => {
+      let low = c.toLowerCase();
+      return low.includes("इयत्ता") || low.includes("तुकडी") || ["std", "standard", "class"].includes(low);
+    });
+
     if (defaultPicked && !activeSelectedColumns.includes(defaultPicked)) {
       activeSelectedColumns.push(defaultPicked);
     }
@@ -282,7 +286,6 @@
     renderDynamicDropdowns();
   }
 
-  // HANDLE USER CHECK/UNCHECK
   function handleColumnCheck(checkbox) {
     let col = checkbox.value;
     if (checkbox.checked) {
@@ -294,7 +297,6 @@
     applyAllFilters();
   }
 
-  // RENDER DROPDOWNS ONLY FOR CHECKED COLUMNS
   function renderDynamicDropdowns() {
     let dContainer = document.getElementById('dynamicDropdownsContainer');
     dContainer.innerHTML = "";
@@ -318,7 +320,6 @@
         let opt = document.createElement('option');
         opt.value = val;
         opt.innerText = `${col}: ${val}`;
-        dContainer.appendChild(opt);
         select.appendChild(opt);
       });
 
@@ -326,7 +327,6 @@
     });
   }
 
-  // APPLY ALL FILTERS & CALCULATE TOTAL
   function applyAllFilters() {
     let searchVal = document.getElementById('searchInput').value.toLowerCase().trim();
     let statusVal = document.getElementById('statusFilter').value;
@@ -336,15 +336,12 @@
       let roll = st.sr_no.toString();
       let isDone = st.status === 'completed';
 
-      // 1. Search text match
       let matchSearch = name.includes(searchVal) || roll.includes(searchVal);
 
-      // 2. Status match
       let matchStatus = true;
       if(statusVal === "PENDING") matchStatus = !isDone;
       if(statusVal === "DONE") matchStatus = isDone;
 
-      // 3. Dynamic Checked Column Dropdowns match
       let matchDynamic = true;
       for (let col of activeSelectedColumns) {
         let selectEl = document.getElementById(`dynFilter_${col}`);
@@ -360,7 +357,6 @@
       return matchSearch && matchStatus && matchDynamic;
     });
 
-    // Update Live Totals
     let totalDone = filteredStudents.filter(s => s.status === 'completed').length;
     let totalPending = filteredStudents.length - totalDone;
 
@@ -374,7 +370,6 @@
     renderList();
   }
 
-  // RENDER STUDENT CARDS
   function renderList() {
     let container = document.getElementById('studentContainer');
     container.innerHTML = "";
@@ -389,7 +384,6 @@
       let displayName = getStudentDisplayName(st.student_data, st.sr_no);
       let roll = st.sr_no;
 
-      // Show badges for currently active checked columns
       let badgesHtml = "";
       activeSelectedColumns.forEach(col => {
         let val = st.student_data[col];
@@ -409,7 +403,7 @@
           </p>
         </div>
         <div class="action-group">
-          <button class="btn-edit" onclick="openEditModal('${st.id}')">✏️ Edit</button>
+          <button class="btn-edit" onclick="openEditModal('${st.id}')">✏️ माहिती</button>
           <button class="${isDone ? 'btn-done' : 'btn-camera'}" onclick="openCamera('${st.id}')">
             ${isDone ? "🔄 बदला" : "📷 फोटो"}
           </button>
@@ -419,9 +413,39 @@
     });
   }
 
-  // OPEN EDIT MODAL
+  // ADD NEW STUDENT (MANUAL ENTRY FOR BLANK EXCEL)
+  function openAddStudentModal() {
+    isNewStudentMode = true;
+    editingStudentId = null;
+    document.getElementById('modalTitle').innerText = "नवीन विद्यार्थ्यांची नोंद करा";
+
+    let container = document.getElementById('dynamicEditFields');
+    container.innerHTML = "";
+
+    let nextRoll = studentsData.length + 1;
+    let cols = (currentProject.columns && currentProject.columns.length > 0) ? currentProject.columns : availableColumns;
+
+    cols.forEach(col => {
+      let div = document.createElement('div');
+      div.style.marginBottom = "10px";
+      let initVal = (col.includes("अनुक्रमांक") || col.toLowerCase().includes("roll")) ? nextRoll : "";
+
+      div.innerHTML = `
+        <label style="font-size:12px; color:#cbd5e1; display:block; margin-bottom:4px; font-weight:bold;">${col}:</label>
+        <input type="text" id="edit_${col}" value="${initVal}" class="input-box" style="margin-bottom:0; padding:10px; font-size:14px;">
+      `;
+      container.appendChild(div);
+    });
+
+    document.getElementById('editModal').style.display = 'flex';
+  }
+
+  // EDIT STUDENT MODAL
   function openEditModal(stId) {
+    isNewStudentMode = false;
     editingStudentId = stId;
+    document.getElementById('modalTitle').innerText = "विद्यार्थ्याची माहिती बदला (Edit)";
+
     let st = studentsData.find(s => s.id === stId);
     let container = document.getElementById('dynamicEditFields');
     container.innerHTML = "";
@@ -441,31 +465,57 @@
   function closeEditModal() {
     document.getElementById('editModal').style.display = 'none';
     editingStudentId = null;
+    isNewStudentMode = false;
   }
 
-  // SAVE UPDATED DATA
+  // SAVE UPDATED OR NEW DATA
   async function saveStudentData() {
-    let st = studentsData.find(s => s.id === editingStudentId);
+    let cols = isNewStudentMode 
+      ? ((currentProject.columns && currentProject.columns.length > 0) ? currentProject.columns : availableColumns)
+      : Object.keys(studentsData.find(s => s.id === editingStudentId).student_data);
+
     let updatedData = {};
+    cols.forEach(col => {
+      let el = document.getElementById(`edit_${col}`);
+      if (el) updatedData[col] = el.value.trim();
+    });
 
-    for (let key in st.student_data) {
-      let inputVal = document.getElementById(`edit_${key}`).value.trim();
-      updatedData[key] = inputVal;
+    if (isNewStudentMode) {
+      let nextRoll = studentsData.length + 1;
+      let rollVal = updatedData["अनुक्रमांक"] || updatedData["Roll No"] || nextRoll;
+
+      const { data, error } = await client.from('students').insert([{
+        project_id: currentProject.id,
+        sr_no: parseInt(rollVal) || nextRoll,
+        student_data: updatedData,
+        status: 'pending'
+      }]).select().single();
+
+      if (error) {
+        alert("नवीन विद्यार्थी जोडताना अडचण आली: " + error.message);
+        return;
+      }
+
+      studentsData.push(data);
+      alert("✓ नवीन विद्यार्थी यशस्वीरित्या जोडला गेला!");
+
+    } else {
+      const { error } = await client.from('students').update({
+        student_data: updatedData
+      }).eq('id', editingStudentId);
+
+      if (error) {
+        alert("माहिती बदलताना अडचण आली: " + error.message);
+        return;
+      }
+
+      let st = studentsData.find(s => s.id === editingStudentId);
+      st.student_data = updatedData;
+      alert("✓ माहिती सेव्ह झाली!");
     }
 
-    const { error } = await client.from('students').update({
-      student_data: updatedData
-    }).eq('id', editingStudentId);
-
-    if (error) {
-      alert("माहिती बदलताना अडचण आली: " + error.message);
-      return;
-    }
-
-    st.student_data = updatedData;
     closeEditModal();
     applyAllFilters();
-    alert("✓ विद्यार्थ्यांची माहिती यशस्वीरित्या अपडेट झाली!");
   }
 
   // OPEN CAMERA
@@ -516,12 +566,11 @@
     let startY = (vH - sourceH) / 2;
 
     ctx.drawImage(video, startX, startY, sourceW, sourceH, 0, 0, targetW, targetH);
-
     closeCamera();
 
     canvas.toBlob(async function(blob) {
       let stName = getStudentDisplayName(activeStudent.student_data, activeStudent.sr_no);
-      stName = stName.replace(/[^a-zA-Z0-9]/g, "_");
+      stName = stName.replace(/[^a-zA-Z0-9\u0900-\u097F]/g, "_");
       let filename = `${String(activeStudent.sr_no).padStart(4, '0')}_${stName}.jpg`;
       let filePath = `${currentProject.id}/${filename}`;
 
