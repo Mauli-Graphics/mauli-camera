@@ -14,25 +14,29 @@
 
     /* Login View */
     #loginView { padding: 30px 20px; max-width: 400px; margin: 40px auto 0; text-align: center; }
-    .input-box { width: 100%; padding: 14px; margin-bottom: 15px; border-radius: 8px; border: 1px solid #3b3f5c; background: #1a1c29; color: #fff; font-size: 16px; }
+    .input-box { width: 100%; padding: 14px; margin-bottom: 15px; border-radius: 8px; border: 1px solid #3b3f5c; background: #1a1c29; color: #fff; font-size: 16px; outline: none; }
     .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; }
     .btn-login { background: #2563eb; color: #fff; }
-    .btn-logout { background: #ef4444; color: #fff; padding: 6px 12px; font-size: 12px; border-radius: 6px; border: none; }
+    .btn-logout { background: #ef4444; color: #fff; padding: 6px 12px; font-size: 12px; border-radius: 6px; border: none; cursor: pointer; }
 
     /* Student List View */
     #listView { display: none; padding: 12px; padding-bottom: 40px; }
-    .student-card { background: #1a1c29; border: 1px solid #2c3049; border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
+    .student-card { background: #1a1c29; border: 1px solid #2c3049; border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
     .student-card.done { border-color: #10b981; background: #13221f; }
-    .st-info h4 { margin: 0 0 4px 0; font-size: 15px; color: #f3f4f6; }
+    .st-info { flex: 1; min-width: 0; }
+    .st-info h4 { margin: 0 0 4px 0; font-size: 15px; color: #f3f4f6; word-break: break-word; }
     .st-info p { margin: 0; font-size: 12px; color: #9ca3af; }
-    .btn-camera { background: #2563eb; color: #fff; border: none; padding: 9px 15px; border-radius: 7px; font-weight: bold; font-size: 13px; }
-    .btn-done { background: #10b981; color: #fff; border: none; padding: 9px 15px; border-radius: 7px; font-weight: bold; font-size: 13px; }
+    
+    .action-group { display: flex; gap: 6px; align-items: center; }
+    .btn-edit { background: #4b5563; color: #fff; border: none; padding: 9px 12px; border-radius: 7px; font-weight: bold; font-size: 13px; cursor: pointer; }
+    .btn-camera { background: #2563eb; color: #fff; border: none; padding: 9px 12px; border-radius: 7px; font-weight: bold; font-size: 13px; cursor: pointer; }
+    .btn-done { background: #10b981; color: #fff; border: none; padding: 9px 12px; border-radius: 7px; font-weight: bold; font-size: 13px; cursor: pointer; }
 
     /* Camera Fullscreen View */
     #cameraView { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 100; flex-direction: column; }
     .cam-header { position: absolute; top: 15px; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; padding: 0 16px; z-index: 102; }
     .cam-student-name { background: rgba(0,0,0,0.65); padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: bold; color: #fff; }
-    .btn-close-cam { background: rgba(239,68,68,0.85); color: #fff; border: none; width: 34px; height: 34px; border-radius: 50%; font-size: 16px; font-weight: bold; }
+    .btn-close-cam { background: rgba(239,68,68,0.85); color: #fff; border: none; width: 34px; height: 34px; border-radius: 50%; font-size: 16px; font-weight: bold; cursor: pointer; }
     
     #videoElement { width: 100%; height: 100%; object-fit: cover; }
     
@@ -43,8 +47,13 @@
 
     /* Controls */
     .cam-controls { position: absolute; bottom: 25px; left: 0; right: 0; display: flex; justify-content: center; align-items: center; z-index: 102; }
-    .btn-snap { width: 72px; height: 72px; background: #fff; border: 4px solid #2563eb; border-radius: 50%; outline: none; box-shadow: 0 0 20px rgba(0,0,0,0.6); }
+    .btn-snap { width: 72px; height: 72px; background: #fff; border: 4px solid #2563eb; border-radius: 50%; outline: none; box-shadow: 0 0 20px rgba(0,0,0,0.6); cursor: pointer; }
     .btn-snap:active { transform: scale(0.92); }
+
+    /* Edit Modal Box */
+    #editModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.82); z-index: 200; padding: 20px; align-items: center; justify-content: center; }
+    .modal-content { background: #1f2133; padding: 20px; border-radius: 12px; max-width: 480px; width: 100%; max-height: 85vh; overflow-y: auto; border: 1px solid #3b3f5c; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .modal-content h3 { color: #f59e0b; margin-top: 0; margin-bottom: 15px; font-size: 17px; }
   </style>
 </head>
 <body>
@@ -95,6 +104,18 @@
     </div>
   </div>
 
+  <!-- 4. EDIT STUDENT DATA MODAL -->
+  <div id="editModal">
+    <div class="modal-content">
+      <h3>विद्यार्थ्याची माहिती बदला (Edit)</h3>
+      <div id="dynamicEditFields"></div>
+      <div style="display: flex; gap: 10px; margin-top: 15px;">
+        <button class="btn" style="background:#10b981; flex:1;" onclick="saveStudentData()">✓ Save Kara</button>
+        <button class="btn" style="background:#ef4444; flex:1;" onclick="closeEditModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Hidden Canvas for 300 DPI Cropping -->
   <canvas id="cropCanvas" style="display:none;"></canvas>
 
@@ -102,7 +123,7 @@
   // SUPABASE CONFIGURATION - MAULI CARDS
   const SUPABASE_URL = "https://cqukjscpdfrfijgqdlyx.supabase.co";
   
-  // NOTE: इथे तुमची मगाशी चाललेली 'eyJ...' anon key पेस्ट करा:
+  // NOTE: Khali tumchi ti eyJ... wali anon key paste kara:
   const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNxdWtqc2NwZGZyZmlqZ3FkbHl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI5ODQzNTIsImV4cCI6MjEwODU2MDM1Mn0.a0v2VZQDqU4wlO1Cj_W6osQkgE7t6IChSqcInLnpX84";
 
   const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -111,6 +132,7 @@
   let studentsData = [];
   let activeStudent = null;
   let mediaStream = null;
+  let editingStudentId = null;
 
   // LOGIN FUNCTION
   async function login() {
@@ -170,14 +192,67 @@
           <h4>${roll}. ${displayName}</h4>
           <p>${isDone ? "✓ फोटो सेव्ह झाला" : "फोटो बाकी आहे"}</p>
         </div>
-        <button class="${isDone ? 'btn-done' : 'btn-camera'}" onclick="openCamera('${st.id}')">
-          ${isDone ? "🔄 बदला" : "📷 फोटो काढा"}
-        </button>
+        <div class="action-group">
+          <button class="btn-edit" onclick="openEditModal('${st.id}')">✏️ Edit</button>
+          <button class="${isDone ? 'btn-done' : 'btn-camera'}" onclick="openCamera('${st.id}')">
+            ${isDone ? "🔄 बदला" : "📷 फोटो"}
+          </button>
+        </div>
       `;
       container.appendChild(card);
     });
 
     document.getElementById('counterText').innerText = `${doneCount} / ${studentsData.length} फोटो पूर्ण`;
+  }
+
+  // OPEN EDIT MODAL
+  function openEditModal(stId) {
+    editingStudentId = stId;
+    let st = studentsData.find(s => s.id === stId);
+    let container = document.getElementById('dynamicEditFields');
+    container.innerHTML = "";
+
+    for (let key in st.student_data) {
+      let div = document.createElement('div');
+      div.style.marginBottom = "10px";
+      div.innerHTML = `
+        <label style="font-size:12px; color:#cbd5e1; display:block; margin-bottom:4px; font-weight:bold;">${key}:</label>
+        <input type="text" id="edit_${key}" value="${st.student_data[key] || ''}" class="input-box" style="margin-bottom:0; padding:10px; font-size:14px;">
+      `;
+      container.appendChild(div);
+    }
+    document.getElementById('editModal').style.display = 'flex';
+  }
+
+  // CLOSE EDIT MODAL
+  function closeEditModal() {
+    document.getElementById('editModal').style.display = 'none';
+    editingStudentId = null;
+  }
+
+  // SAVE UPDATED DATA TO SUPABASE
+  async function saveStudentData() {
+    let st = studentsData.find(s => s.id === editingStudentId);
+    let updatedData = {};
+
+    for (let key in st.student_data) {
+      let inputVal = document.getElementById(`edit_${key}`).value.trim();
+      updatedData[key] = inputVal;
+    }
+
+    const { error } = await client.from('students').update({
+      student_data: updatedData
+    }).eq('id', editingStudentId);
+
+    if (error) {
+      alert("माहिती बदलताना अडचण आली: " + error.message);
+      return;
+    }
+
+    st.student_data = updatedData;
+    closeEditModal();
+    renderList();
+    alert("✓ विद्यार्थ्यांची माहिती यशस्वीरित्या अपडेट झाली!");
   }
 
   // OPEN CAMERA
@@ -208,7 +283,7 @@
     document.getElementById('cameraView').style.display = 'none';
   }
 
-  // CAPTURE & CROP TO FACE-GUIDE RATIO
+  // CAPTURE & CROP
   async function captureAndUpload() {
     let video = document.getElementById('videoElement');
     let canvas = document.getElementById('cropCanvas');
@@ -217,7 +292,6 @@
     let vW = video.videoWidth;
     let vH = video.videoHeight;
 
-    // Crop center according to ID card portrait ratio
     let targetW = 600;
     let targetH = 750;
 
@@ -233,14 +307,12 @@
 
     closeCamera();
 
-    // Convert to Blob & Upload to Supabase Storage
     canvas.toBlob(async function(blob) {
       let stName = activeStudent.student_data["Name"] || activeStudent.student_data["Student_Name"] || "Student";
       stName = stName.replace(/[^a-zA-Z0-9]/g, "_");
       let filename = `${String(activeStudent.sr_no).padStart(4, '0')}_${stName}.jpg`;
       let filePath = `${currentProject.id}/${filename}`;
 
-      // Upload to Storage Bucket
       const { error: upErr } = await client.storage.from('student-photos').upload(filePath, blob, {
         upsert: true,
         contentType: 'image/jpeg'
@@ -251,17 +323,14 @@
         return;
       }
 
-      // Public URL
       const { data: pubData } = client.storage.from('student-photos').getPublicUrl(filePath);
 
-      // Update Student in Table
       await client.from('students').update({
         photo_url: pubData.publicUrl,
         photo_filename: filename,
         status: 'completed'
       }).eq('id', activeStudent.id);
 
-      // Refresh Local Data
       activeStudent.status = 'completed';
       activeStudent.photo_url = pubData.publicUrl;
       activeStudent.photo_filename = filename;
