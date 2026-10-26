@@ -14,19 +14,25 @@
 
     /* Login View */
     #loginView { padding: 30px 20px; max-width: 400px; margin: 40px auto 0; text-align: center; }
-    .input-box { width: 100%; padding: 14px; margin-bottom: 15px; border-radius: 8px; border: 1px solid #3b3f5c; background: #1a1c29; color: #fff; font-size: 16px; outline: none; }
-    .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; }
+    .input-box { width: 100%; padding: 13px; margin-bottom: 14px; border-radius: 8px; border: 1px solid #3b3f5c; background: #1a1c29; color: #fff; font-size: 15px; outline: none; }
+    .btn { width: 100%; padding: 13px; border: none; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer; transition: 0.2s; }
     .btn-login { background: #2563eb; color: #fff; }
     .btn-logout { background: #ef4444; color: #fff; padding: 6px 12px; font-size: 12px; border-radius: 6px; border: none; cursor: pointer; }
 
+    /* Controls & Filters Bar */
+    .filter-section { background: #1a1c29; border: 1px solid #2c3049; border-radius: 10px; padding: 12px; margin-bottom: 14px; }
+    .filter-row { display: flex; gap: 8px; margin-top: 8px; }
+    .filter-select { flex: 1; padding: 9px; border-radius: 7px; border: 1px solid #3b3f5c; background: #12131c; color: #fff; font-size: 13px; outline: none; }
+
     /* Student List View */
-    #listView { display: none; padding: 12px; padding-bottom: 40px; }
+    #listView { display: none; padding: 12px; padding-bottom: 50px; }
     .student-card { background: #1a1c29; border: 1px solid #2c3049; border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
     .student-card.done { border-color: #10b981; background: #13221f; }
     .st-info { flex: 1; min-width: 0; }
     .st-info h4 { margin: 0 0 4px 0; font-size: 15px; color: #f3f4f6; word-break: break-word; }
     .st-info p { margin: 0; font-size: 12px; color: #9ca3af; }
-    
+    .st-tag { display: inline-block; background: #2563eb; color: #fff; font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 4px; margin-right: 6px; }
+
     .action-group { display: flex; gap: 6px; align-items: center; }
     .btn-edit { background: #4b5563; color: #fff; border: none; padding: 9px 12px; border-radius: 7px; font-weight: bold; font-size: 13px; cursor: pointer; }
     .btn-camera { background: #2563eb; color: #fff; border: none; padding: 9px 12px; border-radius: 7px; font-weight: bold; font-size: 13px; cursor: pointer; }
@@ -75,13 +81,29 @@
 
   <!-- 2. STUDENT LIST SCREEN -->
   <div id="listView">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin: 10px 0 15px 0;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin: 10px 0 12px 0;">
       <div>
         <h3 id="schoolHeading" style="margin:0; font-size: 17px; color:#f3f4f6;">School Name</h3>
         <span id="counterText" style="font-size:12px; color:#9ca3af;">0/0 पूर्ण</span>
       </div>
       <button class="btn-logout" onclick="logout()">बाहेर पडा</button>
     </div>
+
+    <!-- FILTER & SEARCH BAR -->
+    <div class="filter-section">
+      <input type="text" id="searchInput" class="input-box" style="margin-bottom:0;" placeholder="🔍 Roll No किंवा नावाने शोधा..." oninput="applyFilters()">
+      <div class="filter-row">
+        <select id="classFilter" class="filter-select" onchange="applyFilters()">
+          <option value="ALL">सर्व तुकड्या (All Classes)</option>
+        </select>
+        <select id="statusFilter" class="filter-select" onchange="applyFilters()">
+          <option value="ALL">सर्व विद्यार्थी</option>
+          <option value="PENDING">बाकी असलेले</option>
+          <option value="DONE">पूर्ण झालेले</option>
+        </select>
+      </div>
+    </div>
+
     <div id="studentContainer"></div>
   </div>
 
@@ -123,18 +145,19 @@
   // SUPABASE CONFIGURATION - MAULI CARDS
   const SUPABASE_URL = "https://cqukjscpdfrfijgqdlyx.supabase.co";
   
-  // NOTE: Khali tumchi ti eyJ... wali anon key verify kara:
+  // NOTE: Khali tumchi ti eyJ... wali anon key paste kara:
   const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNxdWtqc2NwZGZyZmlqZ3FkbHl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI5ODQzNTIsImV4cCI6MjEwODU2MDM1Mn0.a0v2VZQDqU4wlO1Cj_W6osQkgE7t6IChSqcInLnpX84";
 
   const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
   let currentProject = null;
   let studentsData = [];
+  let filteredStudents = [];
   let activeStudent = null;
   let mediaStream = null;
   let editingStudentId = null;
 
-  // AUTO DETECT STUDENT NAME FUNCTION
+  // AUTO DETECT STUDENT NAME
   function getStudentDisplayName(data, srNo) {
     if (!data) return "Student #" + srNo;
     let possible = [
@@ -148,13 +171,24 @@
         return data[p].toString().trim();
       }
     }
-    // Fallback: search key containing "name"
     for (let k in data) {
       if (k.toLowerCase().includes("name") && data[k] && data[k].toString().trim() !== "") {
         return data[k].toString().trim();
       }
     }
     return "Student #" + srNo;
+  }
+
+  // AUTO DETECT CLASS / STD
+  function getStudentClass(data) {
+    if (!data) return "";
+    let possible = ["STD", "std", "Std", "Standard", "Class", "CLASS", "Tukadi", "Div"];
+    for (let p of possible) {
+      if (data[p] && data[p].toString().trim() !== "") {
+        return data[p].toString().trim();
+      }
+    }
+    return "";
   }
 
   // LOGIN FUNCTION
@@ -192,28 +226,86 @@
     }
 
     studentsData = sList;
+    populateClassDropdown();
+    applyFilters();
+  }
+
+  // POPULATE CLASS DROPDOWN AUTOMATICALLY
+  function populateClassDropdown() {
+    let classes = new Set();
+    studentsData.forEach(st => {
+      let c = getStudentClass(st.student_data);
+      if(c) classes.add(c);
+    });
+
+    let dropdown = document.getElementById('classFilter');
+    dropdown.innerHTML = `<option value="ALL">सर्व तुकड्या (All Classes)</option>`;
+    
+    Array.from(classes).sort().forEach(cls => {
+      let opt = document.createElement('option');
+      opt.value = cls;
+      opt.innerText = "Class: " + cls;
+      dropdown.appendChild(opt);
+    });
+  }
+
+  // APPLY SEARCH & FILTERS
+  function applyFilters() {
+    let searchVal = document.getElementById('searchInput').value.toLowerCase().trim();
+    let classVal = document.getElementById('classFilter').value;
+    let statusVal = document.getElementById('statusFilter').value;
+
+    filteredStudents = studentsData.filter(st => {
+      let name = getStudentDisplayName(st.student_data, st.sr_no).toLowerCase();
+      let roll = st.sr_no.toString();
+      let cls = getStudentClass(st.student_data);
+      let isDone = st.status === 'completed';
+
+      // 1. Search text match
+      let matchSearch = name.includes(searchVal) || roll.includes(searchVal);
+
+      // 2. Class match
+      let matchClass = (classVal === "ALL") || (cls === classVal);
+
+      // 3. Status match
+      let matchStatus = true;
+      if(statusVal === "PENDING") matchStatus = !isDone;
+      if(statusVal === "DONE") matchStatus = isDone;
+
+      return matchSearch && matchClass && matchStatus;
+    });
+
     renderList();
   }
 
-  // RENDER STUDENT CARDS
+  // RENDER FILTERED STUDENT CARDS
   function renderList() {
     let container = document.getElementById('studentContainer');
     container.innerHTML = "";
-    let doneCount = 0;
 
-    studentsData.forEach(st => {
+    let totalDone = studentsData.filter(s => s.status === 'completed').length;
+    document.getElementById('counterText').innerText = `${totalDone} / ${studentsData.length} फोटो पूर्ण`;
+
+    if(filteredStudents.length === 0) {
+      container.innerHTML = `<div style="text-align:center; padding:30px; color:#9ca3af; font-size:14px;">कोणताही विद्यार्थी सापडला नाही.</div>`;
+      return;
+    }
+
+    filteredStudents.forEach(st => {
       let isDone = st.status === 'completed';
-      if(isDone) doneCount++;
-
       let displayName = getStudentDisplayName(st.student_data, st.sr_no);
       let roll = st.sr_no;
+      let cls = getStudentClass(st.student_data);
 
       let card = document.createElement('div');
       card.className = "student-card " + (isDone ? "done" : "");
       card.innerHTML = `
         <div class="st-info">
           <h4>${roll}. ${displayName}</h4>
-          <p>${isDone ? "✓ फोटो सेव्ह झाला" : "फोटो बाकी आहे"}</p>
+          <p>
+            ${cls ? `<span class="st-tag">${cls}</span>` : ""}
+            ${isDone ? "✓ फोटो सेव्ह झाला" : "फोटो बाकी आहे"}
+          </p>
         </div>
         <div class="action-group">
           <button class="btn-edit" onclick="openEditModal('${st.id}')">✏️ Edit</button>
@@ -224,8 +316,6 @@
       `;
       container.appendChild(card);
     });
-
-    document.getElementById('counterText').innerText = `${doneCount} / ${studentsData.length} फोटो पूर्ण`;
   }
 
   // OPEN EDIT MODAL
@@ -247,13 +337,12 @@
     document.getElementById('editModal').style.display = 'flex';
   }
 
-  // CLOSE EDIT MODAL
   function closeEditModal() {
     document.getElementById('editModal').style.display = 'none';
     editingStudentId = null;
   }
 
-  // SAVE UPDATED DATA TO SUPABASE
+  // SAVE UPDATED DATA
   async function saveStudentData() {
     let st = studentsData.find(s => s.id === editingStudentId);
     let updatedData = {};
@@ -274,7 +363,7 @@
 
     st.student_data = updatedData;
     closeEditModal();
-    renderList();
+    applyFilters();
     alert("✓ विद्यार्थ्यांची माहिती यशस्वीरित्या अपडेट झाली!");
   }
 
@@ -298,7 +387,6 @@
     }
   }
 
-  // CLOSE CAMERA
   function closeCamera() {
     if(mediaStream) {
       mediaStream.getTracks().forEach(track => track.stop());
@@ -357,7 +445,7 @@
       activeStudent.status = 'completed';
       activeStudent.photo_url = pubData.publicUrl;
       activeStudent.photo_filename = filename;
-      renderList();
+      applyFilters();
 
     }, 'image/jpeg', 0.92);
   }
