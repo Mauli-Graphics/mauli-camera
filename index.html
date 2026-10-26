@@ -68,7 +68,7 @@
   <div id="loginView">
     <h2 style="color: #f59e0b; margin-top: 0;">School Login</h2>
     <p style="color: #9ca3af; font-size: 13px; margin-bottom: 25px;">फोटो काढण्यासाठी Job ID आणि Password टाका</p>
-    <input type="text" id="inputJobId" class="input-box" placeholder="Job ID (उदा. 288892)" inputmode="numeric">
+    <input type="text" id="inputJobId" class="input-box" placeholder="Job ID (उदा. 361248)" inputmode="numeric">
     <input type="password" id="inputPin" class="input-box" placeholder="Login Password" inputmode="numeric">
     <button class="btn btn-login" onclick="login()">Login Kara</button>
   </div>
@@ -123,7 +123,7 @@
   // SUPABASE CONFIGURATION - MAULI CARDS
   const SUPABASE_URL = "https://cqukjscpdfrfijgqdlyx.supabase.co";
   
-  // NOTE: Khali tumchi ti eyJ... wali anon key paste kara:
+  // NOTE: Khali tumchi ti eyJ... wali anon key verify kara:
   const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNxdWtqc2NwZGZyZmlqZ3FkbHl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI5ODQzNTIsImV4cCI6MjEwODU2MDM1Mn0.a0v2VZQDqU4wlO1Cj_W6osQkgE7t6IChSqcInLnpX84";
 
   const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -133,6 +133,29 @@
   let activeStudent = null;
   let mediaStream = null;
   let editingStudentId = null;
+
+  // AUTO DETECT STUDENT NAME FUNCTION
+  function getStudentDisplayName(data, srNo) {
+    if (!data) return "Student #" + srNo;
+    let possible = [
+      "Full Name", "Full_Name", "FullName", "full name", "FULL NAME",
+      "Name", "NAME", "name", 
+      "Student Name", "Student_Name", "StudentName",
+      "Vidyarthi Naav", "Vidyarthi", "Student"
+    ];
+    for (let p of possible) {
+      if (data[p] && data[p].toString().trim() !== "") {
+        return data[p].toString().trim();
+      }
+    }
+    // Fallback: search key containing "name"
+    for (let k in data) {
+      if (k.toLowerCase().includes("name") && data[k] && data[k].toString().trim() !== "") {
+        return data[k].toString().trim();
+      }
+    }
+    return "Student #" + srNo;
+  }
 
   // LOGIN FUNCTION
   async function login() {
@@ -182,7 +205,7 @@
       let isDone = st.status === 'completed';
       if(isDone) doneCount++;
 
-      let displayName = st.student_data["Name"] || st.student_data["Student_Name"] || st.student_data["Student Name"] || ("Student #" + st.sr_no);
+      let displayName = getStudentDisplayName(st.student_data, st.sr_no);
       let roll = st.sr_no;
 
       let card = document.createElement('div');
@@ -258,7 +281,7 @@
   // OPEN CAMERA
   async function openCamera(studentId) {
     activeStudent = studentsData.find(s => s.id === studentId);
-    let displayName = activeStudent.student_data["Name"] || activeStudent.student_data["Student_Name"] || ("Student #" + activeStudent.sr_no);
+    let displayName = getStudentDisplayName(activeStudent.student_data, activeStudent.sr_no);
     document.getElementById('activeStudentLabel').innerText = `${activeStudent.sr_no}. ${displayName}`;
 
     document.getElementById('cameraView').style.display = 'flex';
@@ -308,7 +331,7 @@
     closeCamera();
 
     canvas.toBlob(async function(blob) {
-      let stName = activeStudent.student_data["Name"] || activeStudent.student_data["Student_Name"] || "Student";
+      let stName = getStudentDisplayName(activeStudent.student_data, activeStudent.sr_no);
       stName = stName.replace(/[^a-zA-Z0-9]/g, "_");
       let filename = `${String(activeStudent.sr_no).padStart(4, '0')}_${stName}.jpg`;
       let filePath = `${currentProject.id}/${filename}`;
