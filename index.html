@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com">
-  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * { 
@@ -19,8 +19,6 @@
       color: #fff; 
       margin: 0; 
       padding: 0; 
-      user-select: none; 
-      -webkit-user-select: none; 
     }
     .header { 
       background: #1f2133; 
@@ -106,7 +104,7 @@
       gap: 5px; 
     }
 
-    /* Controls & Dynamic Filters Section */
+    /* Filters Section */
     .filter-section { 
       background: #1a1c29; 
       border: 1px solid #2c3049; 
@@ -268,7 +266,7 @@
       cursor: pointer; 
     }
 
-    /* Security Proof Preview Modal */
+    /* Regular Clean Proof Preview Modal */
     #proofModal { 
       display: none; 
       position: fixed; 
@@ -276,70 +274,25 @@
       left: 0; 
       width: 100%; 
       height: 100%; 
-      background: rgba(0,0,0,0.92); 
+      background: rgba(0,0,0,0.85); 
       z-index: 300; 
       justify-content: center; 
       align-items: center; 
       flex-direction: column; 
       padding: 15px; 
     }
-    .proof-box { 
+    .proof-card-stage { 
       position: relative; 
-      max-width: 90vw; 
-      max-height: 75vh; 
-      box-shadow: 0 20px 50px rgba(0,0,0,0.8); 
-      border: 2px solid #4b5563; 
-      border-radius: 8px; 
+      box-shadow: 0 15px 40px rgba(0,0,0,0.9); 
+      border-radius: 6px; 
       overflow: hidden; 
-      background: #fff; 
+      background: #fff center/cover no-repeat; 
     }
-    #proofCanvas { 
-      display: block; 
-      max-width: 100%; 
-      height: auto; 
-      pointer-events: none; 
-    }
-    
-    /* Security Overlay Protection */
-    .anti-screenshot-shield { 
+    .proof-el { 
       position: absolute; 
-      top: 0; 
-      left: 0; 
-      width: 100%; 
-      height: 100%; 
-      pointer-events: none; 
-      background: repeating-linear-gradient(45deg, rgba(239,68,68,0.12), rgba(239,68,68,0.12) 15px, rgba(0,0,0,0) 15px, rgba(0,0,0,0) 30px); 
-    }
-    .watermark-text { 
-      position: absolute; 
-      top: 50%; 
-      left: 50%; 
-      transform: translate(-50%, -50%) rotate(-35deg); 
-      font-size: 19px; 
-      font-weight: 800; 
-      color: rgba(255, 255, 255, 0.38); 
-      text-shadow: 1px 1px 4px rgba(0,0,0,0.85); 
-      white-space: nowrap; 
-      pointer-events: none; 
-      text-align: center; 
-      line-height: 1.4; 
-    }
-
-    /* Blackout Curtain on PrintScreen */
-    #blackoutScreen { 
-      display: none; 
-      position: fixed; 
-      top: 0; 
-      left: 0; 
-      width: 100vw; 
-      height: 100vh; 
-      background: #000; 
-      z-index: 9999; 
-      color: #ef4444; 
-      text-align: center; 
-      padding-top: 40vh; 
-      font-size: 20px; 
-      font-weight: bold; 
+      overflow: hidden; 
+      display: flex; 
+      user-select: none; 
     }
 
     /* Camera Fullscreen */
@@ -487,10 +440,7 @@
     }
   </style>
 </head>
-<body oncontextmenu="return false;">
-
-  <!-- Screen protection on screenshot keys -->
-  <div id="blackoutScreen">⚠️ SCREENSHOT NOT ALLOWED</div>
+<body>
 
   <!-- HEADER -->
   <div class="header">
@@ -524,7 +474,6 @@
     <div class="filter-section">
       <input type="text" id="searchInput" class="input-box" style="margin-bottom:0;" placeholder="🔍 रोल नंबर किंवा नावाने शोधा..." oninput="applyAllFilters()">
       
-      <!-- Base Filter Row -->
       <div style="display:flex; gap:8px; margin-top:8px;">
         <select id="statusFilter" class="filter-select" onchange="applyAllFilters()">
           <option value="ALL">सर्व स्थिती (All Status)</option>
@@ -534,16 +483,13 @@
         <button class="filter-toggle-btn" style="flex:1; margin-top:0;" onclick="toggleColumnPicker()">⚙️ सानुकूल फिल्टर्स (Columns)</button>
       </div>
 
-      <!-- Column Checkbox Chooser -->
       <div id="columnPicker" class="column-picker">
         <div style="font-size:12px; color:#f59e0b; font-weight:bold; margin-bottom:8px;">फिल्टर करण्यासाठी कॉलम निवडा (Tick करा):</div>
         <div id="checkboxContainer"></div>
       </div>
 
-      <!-- Container where active checked dropdowns will appear -->
       <div id="dynamicDropdownsContainer" class="dynamic-dropdown-grid"></div>
 
-      <!-- Live Total Summary -->
       <div class="total-counter-bar">
         <div><b>एकूण निकाल:</b> <span id="filteredCount" style="color:#38bdf8; font-weight:bold;">0</span> विद्यार्थी सापडले</div>
         <div style="color:#10b981;"><b>पूर्ण:</b> <span id="filteredDoneCount">0</span> | <span style="color:#f87171;"><b>बाकी:</b> <span id="filteredPendingCount">0</span></span></div>
@@ -553,19 +499,15 @@
     <div id="studentContainer"></div>
   </div>
 
-  <!-- 3. PROOF PREVIEW MODAL (Anti-Screenshot Protected) -->
+  <!-- 3. CLEAN REGULAR PROOF PREVIEW MODAL (Exact Matching Original Card) -->
   <div id="proofModal">
-    <div style="display:flex; justify-content:space-between; width:100%; max-width:320px; margin-bottom:10px;">
-      <span style="font-size:13px; color:#f59e0b; font-weight:bold;">सुरक्षित प्रूफ प्रिव्ह्यू (Proof Only)</span>
-      <button style="background:#ef4444; color:#fff; border:none; padding:4px 10px; border-radius:4px; font-weight:bold; cursor:pointer;" onclick="closeProofModal()">✕ बंद करा</button>
+    <div style="display:flex; justify-content:space-between; align-items:center; width:100%; max-width:330px; margin-bottom:12px;">
+      <span style="font-size:14px; color:#f59e0b; font-weight:bold;">आयडी कार्ड प्रिव्ह्यू (ID Card Preview)</span>
+      <button style="background:#ef4444; color:#fff; border:none; padding:5px 12px; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="closeProofModal()">✕ बंद करा</button>
     </div>
     
-    <div class="proof-box">
-      <canvas id="proofCanvas"></canvas>
-      <div class="anti-screenshot-shield"></div>
-      <div class="watermark-text" id="watermarkJobLabel">FOR PROOF PURPOSE ONLY<br>MAULI GRAPHICS</div>
-    </div>
-    <div style="font-size:11px; color:#9ca3af; margin-top:8px; text-align:center;">* स्पेलिंग आणि माहिती तपासण्यासाठी प्रिव्ह्यू (प्रिंटिंगसाठी नाही)</div>
+    <div id="proofCardContainer" class="proof-card-stage"></div>
+    <div style="font-size:12px; color:#94a3b8; margin-top:10px; text-align:center;">* स्पेलिंग, पत्ता आणि फोटो तपासून घ्या</div>
   </div>
 
   <!-- 4. CAMERA FULLSCREEN -->
@@ -577,7 +519,6 @@
 
     <video id="videoElement" autoplay playsinline></video>
 
-    <!-- Face Guide Frame -->
     <div class="face-guide-container">
       <div class="face-guide-box" id="guideBox"></div>
     </div>
@@ -599,14 +540,13 @@
     </div>
   </div>
 
-  <!-- Hidden Canvas for 300 DPI Cropping -->
   <canvas id="cropCanvas" style="display:none;"></canvas>
 
 <script>
   // SUPABASE CONFIGURATION - MAULI CARDS
   const SUPABASE_URL = "https://cqukjscpdfrfijgqdlyx.supabase.co";
   
-  // NOTE: Khali tumchi ti eyJ... anon key paste kara:
+  // NOTE: Khali tumchi eyJ... anon key paste kara:
   const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNxdWtqc2NwZGZyZmlqZ3FkbHl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI5ODQzNTIsImV4cCI6MjEwODU2MDM1Mn0.a0v2VZQDqU4wlO1Cj_W6osQkgE7t6IChSqcInLnpX84";
 
   const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -621,33 +561,13 @@
   let editingStudentId = null;
   let isNewStudentMode = false;
 
-  // 1. ANTI-SCREENSHOT & SNIP DETECTORS
-  window.addEventListener("keyup", function(e) {
-    if (e.key === "PrintScreen" || e.keyCode === 44) {
-      triggerBlackout();
-    }
-  });
+  const PHOTO_REGEX = /photo|image|pic|img/i;
 
-  window.addEventListener("keydown", function(e) {
-    // Block Ctrl+P (Print), Ctrl+S (Save), Ctrl+U (Source), Ctrl+Shift+I (Inspect)
-    if ((e.ctrlKey && (e.key === 'p' || e.key === 's' || e.key === 'u')) || 
-        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'S' || e.key === 'C'))) {
-      e.preventDefault();
-      triggerBlackout();
-      return false;
-    }
-  });
-
-  function triggerBlackout() {
-    let screen = document.getElementById('blackoutScreen');
-    screen.style.display = 'block';
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText("Screenshots are protected by Mauli Graphics.");
-    }
-    setTimeout(() => { screen.style.display = 'none'; }, 2000);
+  function norm(s) {
+    return String(s || '').trim().toLowerCase().replace(/^.*[\\/]/, '').replace(/\.[a-z0-9]+$/, '');
   }
 
-  // 2. DYNAMIC SCHOOL NAME ON JOB ID INPUT
+  // 1. AUTO DETECT SCHOOL NAME
   async function checkJobName() {
     let jId = document.getElementById('inputJobId').value.trim();
     let titleEl = document.getElementById('loginTitle');
@@ -671,7 +591,7 @@
     }
   }
 
-  // 3. AUTO DETECT STUDENT NAME
+  // 2. DETECT STUDENT NAME
   function getStudentDisplayName(data, srNo) {
     if (!data) return "विद्यार्थी #" + srNo;
     let possible = [
@@ -693,7 +613,19 @@
     return "विद्यार्थी #" + srNo;
   }
 
-  // 4. VALIDATION HELPER FUNCTIONS
+  // 3. EXACT PHOTO MATCHING (Matches Make ID Card Pro logic)
+  function getStudentPhotoUrl(st) {
+    if (st.photo_url) return st.photo_url;
+    let sData = st.student_data || {};
+    for (let k in sData) {
+      if (PHOTO_REGEX.test(k) && sData[k]) {
+        let val = sData[k].toString().trim();
+        if (val.startsWith("http")) return val;
+      }
+    }
+    return "";
+  }
+
   function isMobileColumn(colName) {
     let low = colName.toLowerCase();
     return low.includes("mobile") || low.includes("phone") || low.includes("contact") || low.includes("मोबाईल") || low.includes("फोन") || low.includes("संपर्क");
@@ -721,7 +653,7 @@
     return true;
   }
 
-  // 5. LOGIN FUNCTION
+  // 4. LOGIN
   async function login() {
     let jId = document.getElementById('inputJobId').value.trim();
     let pin = document.getElementById('inputPin').value.trim();
@@ -740,7 +672,6 @@
     currentProject = pData;
     document.getElementById('headerBadge').innerText = "Job: " + jId;
     document.getElementById('schoolHeading').innerText = pData.project_name;
-    document.getElementById('watermarkJobLabel').innerHTML = `FOR PROOF ONLY<br>JOB: ${jId} - MAULI GRAPHICS`;
     
     document.getElementById('loginView').style.display = 'none';
     document.getElementById('listView').style.display = 'block';
@@ -748,7 +679,7 @@
     fetchStudents();
   }
 
-  // 6. FETCH STUDENTS
+  // 5. FETCH STUDENTS
   async function fetchStudents() {
     const { data: sList, error: sErr } = await client.from('students').select('*').eq('project_id', currentProject.id).order('sr_no', { ascending: true });
     if(sErr) {
@@ -774,13 +705,11 @@
     applyAllFilters();
   }
 
-  // 7. TOGGLE COLUMN PICKER
   function toggleColumnPicker() {
     let p = document.getElementById('columnPicker');
     p.style.display = (p.style.display === 'block') ? 'none' : 'block';
   }
 
-  // 8. BUILD DYNAMIC COLUMN CHECKBOXES
   function buildColumnCheckboxes() {
     let container = document.getElementById('checkboxContainer');
     container.innerHTML = "";
@@ -820,7 +749,6 @@
     applyAllFilters();
   }
 
-  // 9. RENDER DYNAMIC DROPDOWNS
   function renderDynamicDropdowns() {
     let dContainer = document.getElementById('dynamicDropdownsContainer');
     dContainer.innerHTML = "";
@@ -851,7 +779,6 @@
     });
   }
 
-  // 10. APPLY SEARCH, FILTERS & LIVE TOTALS
   function applyAllFilters() {
     let searchVal = document.getElementById('searchInput').value.toLowerCase().trim();
     let statusVal = document.getElementById('statusFilter').value;
@@ -895,7 +822,6 @@
     renderList();
   }
 
-  // 11. RENDER STUDENT CARDS
   function renderList() {
     let container = document.getElementById('studentContainer');
     container.innerHTML = "";
@@ -940,81 +866,108 @@
     });
   }
 
-  // 12. OPEN ANTI-SCREENSHOT PROOF MODAL
+  // 6. EXACT MATCHING REGULAR CARD PREVIEW (Clean, No Watermark, No Cross)
   function openProofModal(stId) {
     let st = studentsData.find(s => s.id === stId);
     if (!st) return;
 
-    let canvas = document.getElementById('proofCanvas');
-    let ctx = canvas.getContext('2d');
+    let container = document.getElementById('proofCardContainer');
+    container.innerHTML = "";
 
-    // Low-res proof canvas (240x375 approx 57x89mm)
-    let w = 240;
-    let h = 375;
-    canvas.width = w;
-    canvas.height = h;
+    let cfg = currentProject.template_config || {};
+    let cardW = cfg.cardWidthMm || 57;
+    let cardH = cfg.cardHeightMm || 89;
 
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, w, h);
+    // Scale mm to mobile screen preview size
+    let scale = Math.min((window.innerWidth * 0.82) / cardW, (window.innerHeight * 0.68) / cardH);
+    if (scale < 3.5) scale = 3.5;
+    if (scale > 5.5) scale = 5.5;
 
-    let sData = st.student_data || {};
-    let dispName = getStudentDisplayName(sData, st.sr_no);
+    let stageW = Math.round(cardW * scale);
+    let stageH = Math.round(cardH * scale);
 
-    // Photo Box Placeholder
-    ctx.fillStyle = "#e2e8f0";
-    ctx.strokeStyle = "#94a3b8";
-    ctx.fillRect(60, 45, 120, 150);
-    ctx.strokeRect(60, 45, 120, 150);
+    container.style.width = stageW + "px";
+    container.style.height = stageH + "px";
 
-    if (st.photo_url) {
-      let img = new Image();
-      img.crossOrigin = "anonymous";
-      img.onload = function() {
-        ctx.drawImage(img, 60, 45, 120, 150);
-        drawWatermark(ctx, w, h);
-      };
-      img.src = st.photo_url;
+    if (cfg.bgFront) {
+      container.style.backgroundImage = `url("${cfg.bgFront}")`;
     } else {
-      ctx.fillStyle = "#64748b";
-      ctx.font = "12px sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText("PHOTO PENDING", 120, 125);
-      drawWatermark(ctx, w, h);
+      container.style.backgroundImage = "none";
+      container.style.backgroundColor = "#ffffff";
     }
 
-    // Text details
-    ctx.fillStyle = "#000000";
-    ctx.font = "bold 13px 'Libre Baskerville', serif";
-    ctx.textAlign = "center";
-    ctx.fillText(dispName.substring(0, 24), 120, 225);
+    let sData = st.student_data || {};
+    let elements = cfg.elements || [];
 
-    ctx.font = "11px sans-serif";
-    ctx.fillStyle = "#334155";
-    let subInfo = (sData["STD"] || sData["इयत्ता / तुकडी"] || "") + " | Roll: " + st.sr_no;
-    ctx.fillText(subInfo, 120, 248);
+    if (elements.length > 0) {
+      elements.forEach(el => {
+        let div = document.createElement('div');
+        div.className = "proof-el";
+        div.style.left = (el.left * scale) + "px";
+        div.style.top = (el.top * scale) + "px";
+        div.style.width = (el.width * scale) + "px";
+        div.style.height = (el.height * scale) + "px";
+        div.style.zIndex = el.zIndex || 1;
+        div.style.transform = `rotate(${el.rotate || 0}deg)`;
 
-    let dob = sData["D.O.B"] || sData["जन्मदिनांक"] || "";
-    if (dob) ctx.fillText("DOB: " + dob, 120, 270);
+        if (el.type === 'photo') {
+          div.style.border = "1px solid #cbd5e1";
+          div.style.background = "#e2e8f0";
+
+          let pUrl = getStudentPhotoUrl(st);
+          if (pUrl) {
+            div.innerHTML = `<img src="${pUrl}" style="width:100%; height:100%; object-fit:cover; display:block;">`;
+          } else {
+            div.innerHTML = `<div style="font-size:11px; color:#64748b; margin:auto; font-weight:bold;">फोटो नाही</div>`;
+          }
+
+        } else {
+          // Exact text formatting as set in Make ID Card Pro
+          let txt = el.fixedText || "";
+          if (el.column && sData[el.column] !== undefined) {
+            txt = sData[el.column].toString();
+          }
+
+          let pt = (el.fontSize || 8) * 0.3528 * scale;
+          div.style.fontSize = pt + "px";
+          div.style.color = el.color || "#000000";
+          div.style.fontFamily = `'${el.fontFamily || "Segoe UI"}', 'Noto Sans Devanagari', sans-serif`;
+          div.style.fontWeight = el.bold ? "700" : "400";
+          div.style.fontStyle = el.italic ? "italic" : "normal";
+          div.style.lineHeight = el.lineHeight || 1.15;
+          div.style.alignItems = { top: 'flex-start', middle: 'center', bottom: 'flex-end' }[el.verticalAlign || 'middle'];
+          
+          let span = document.createElement('span');
+          span.style.display = "block";
+          span.style.width = "100%";
+          span.style.textAlign = el.align || "center";
+          span.style.whiteSpace = el.wrapText ? "pre-wrap" : "nowrap";
+          span.innerText = txt;
+
+          div.appendChild(span);
+        }
+
+        container.appendChild(div);
+      });
+
+    } else {
+      let dispName = getStudentDisplayName(sData, st.sr_no);
+      container.innerHTML = `
+        <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:100%; color:#000; text-align:center; padding:15px;">
+          <h3 style="margin:0;">${dispName}</h3>
+          <p style="margin:5px 0;">Roll No: ${st.sr_no}</p>
+        </div>
+      `;
+    }
 
     document.getElementById('proofModal').style.display = 'flex';
-  }
-
-  function drawWatermark(ctx, w, h) {
-    ctx.save();
-    ctx.strokeStyle = "rgba(220, 38, 38, 0.35)";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(0, 0); ctx.lineTo(w, h);
-    ctx.moveTo(0, h); ctx.lineTo(w, 0);
-    ctx.stroke();
-    ctx.restore();
   }
 
   function closeProofModal() {
     document.getElementById('proofModal').style.display = 'none';
   }
 
-  // 13. ADD NEW STUDENT MODAL
+  // 7. ADD NEW STUDENT MODAL
   function openAddStudentModal() {
     isNewStudentMode = true;
     editingStudentId = null;
@@ -1046,7 +999,7 @@
     document.getElementById('editModal').style.display = 'flex';
   }
 
-  // 14. EDIT STUDENT MODAL
+  // 8. EDIT STUDENT MODAL
   function openEditModal(stId) {
     isNewStudentMode = false;
     editingStudentId = stId;
@@ -1080,7 +1033,7 @@
     isNewStudentMode = false;
   }
 
-  // 15. SAVE WITH STRICT VALIDATIONS
+  // 9. SAVE WITH VALIDATION
   async function saveStudentData() {
     let cols = isNewStudentMode 
       ? ((currentProject.columns && currentProject.columns.length > 0) ? currentProject.columns : availableColumns)
@@ -1092,7 +1045,6 @@
       let el = document.getElementById(`edit_${col}`);
       let val = el ? el.value.trim() : "";
 
-      // Mobile check
       if (isMobileColumn(col) && val !== "") {
         let cleanNumber = val.replace(/\D/g, "");
         if (cleanNumber.length !== 10) {
@@ -1103,7 +1055,6 @@
         val = cleanNumber;
       }
 
-      // DOB check
       if (isDobColumn(col) && val !== "") {
         let normalizedDate = val.replace(/\//g, "-");
         if (!validateDOBFormat(normalizedDate)) {
@@ -1155,7 +1106,7 @@
     applyAllFilters();
   }
 
-  // 16. OPEN CAMERA
+  // 10. OPEN CAMERA
   async function openCamera(studentId) {
     activeStudent = studentsData.find(s => s.id === studentId);
     let displayName = getStudentDisplayName(activeStudent.student_data, activeStudent.sr_no);
@@ -1182,7 +1133,7 @@
     document.getElementById('cameraView').style.display = 'none';
   }
 
-  // 17. CAPTURE & UPLOAD (300 DPI CROP)
+  // 11. CAPTURE & UPLOAD (300 DPI CROP)
   async function captureAndUpload() {
     let video = document.getElementById('videoElement');
     let canvas = document.getElementById('cropCanvas');
@@ -1237,7 +1188,7 @@
     }, 'image/jpeg', 0.92);
   }
 
-  // 18. LOGOUT
+  // 12. LOGOUT
   function logout() {
     currentProject = null;
     document.getElementById('listView').style.display = 'none';
