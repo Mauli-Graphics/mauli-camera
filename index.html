@@ -19,6 +19,9 @@
       color: #fff; 
       margin: 0; 
       padding: 0; 
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
     }
     .header { 
       background: #1f2133; 
@@ -266,7 +269,7 @@
       cursor: pointer; 
     }
 
-    /* Regular Clean Proof Preview Modal */
+    /* Regular Clean Proof Preview Modal (Without Watermark) */
     #proofModal { 
       display: none; 
       position: fixed; 
@@ -274,7 +277,7 @@
       left: 0; 
       width: 100%; 
       height: 100%; 
-      background: rgba(0,0,0,0.85); 
+      background: rgba(0,0,0,0.88); 
       z-index: 300; 
       justify-content: center; 
       align-items: center; 
@@ -288,12 +291,30 @@
       overflow: hidden; 
       background: #fff center/cover no-repeat; 
       color: #000;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+    /* Invisible shield over card to prevent drag, long press, or Save Image */
+    .save-blocker-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 99;
+      background: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
     }
     .proof-el { 
       position: absolute; 
       overflow: hidden; 
       display: flex; 
       user-select: none; 
+      -webkit-user-select: none;
+      pointer-events: none;
     }
     .proof-el.ph {
       background: #ddd;
@@ -305,6 +326,22 @@
       width: 100%;
       height: 100%;
       display: block;
+      pointer-events: none;
+      -webkit-user-drag: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    /* Anti-Screenshot Blackout Shield */
+    #blackoutShield {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: #000;
+      z-index: 99999;
     }
 
     /* Camera Fullscreen */
@@ -452,7 +489,9 @@
     }
   </style>
 </head>
-<body>
+<body oncontextmenu="return false;">
+
+  <div id="blackoutShield"></div>
 
   <!-- HEADER -->
   <div class="header">
@@ -511,14 +550,16 @@
     <div id="studentContainer"></div>
   </div>
 
-  <!-- 3. EXACT PROOF PREVIEW MODAL -->
+  <!-- 3. CLEAN PROOF PREVIEW (No Watermark, Save Image & Screenshot Blocked) -->
   <div id="proofModal">
     <div style="display:flex; justify-content:space-between; align-items:center; width:100%; max-width:330px; margin-bottom:12px;">
       <span style="font-size:14px; color:#f59e0b; font-weight:bold;">आयडी कार्ड प्रिव्ह्यू (ID Card Preview)</span>
       <button style="background:#ef4444; color:#fff; border:none; padding:5px 12px; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="closeProofModal()">✕ बंद करा</button>
     </div>
     
-    <div id="proofCardContainer" class="proof-card-stage"></div>
+    <div id="proofCardContainer" class="proof-card-stage">
+      <div class="save-blocker-overlay" oncontextmenu="return false;"></div>
+    </div>
     <div style="font-size:12px; color:#94a3b8; margin-top:10px; text-align:center;">* स्पेलिंग, सही आणि फोटो तपासून घ्या</div>
   </div>
 
@@ -575,9 +616,51 @@
 
   const PHOTO_REGEX = /photo|image|pic|img/i;
 
-  function norm(s) {
-    return String(s || '').trim().toLowerCase().replace(/^.*[\\/]/, '').replace(/\.[a-z0-9]+$/, '');
+  // --- STRICT ANTI-SCREENSHOT & IMAGE SAVE BLOCKERS ---
+  function triggerBlackout() {
+    let shield = document.getElementById('blackoutShield');
+    shield.style.display = 'block';
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText("Screen capture blocked.");
+    }
+    setTimeout(() => { shield.style.display = 'none'; }, 1800);
   }
+
+  // Key-combination screenshot blockers (PrintScreen, Win+Shift+S, Ctrl+P, it.)
+  window.addEventListener("keyup", function(e) {
+    if (e.key === "PrintScreen" || e.keyCode === 44) {
+      triggerBlackout();
+    }
+  });
+
+  window.addEventListener("keydown", function(e) {
+    if ((e.ctrlKey && (e.key === 'p' || e.key === 's' || e.key === 'u')) || 
+        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'S' || e.key === 'C'))) {
+      e.preventDefault();
+      triggerBlackout();
+      return false;
+    }
+  });
+
+  // Mobile blur detection (jevha user screenshot sathi power+volume dabto kiva window defocus hote)
+  window.addEventListener("blur", function() {
+    let modal = document.getElementById('proofModal');
+    if (modal && modal.style.display === 'flex') {
+      triggerBlackout();
+    }
+  });
+
+  // Long press aani drag block (Save Image nako mhanun)
+  window.addEventListener("touchstart", function(e) {
+    if (e.target.closest('#proofCardContainer')) {
+      e.target.oncontextmenu = function(ev) { ev.preventDefault(); return false; };
+    }
+  }, { passive: false });
+
+  document.addEventListener("contextmenu", function(e) {
+    e.preventDefault();
+    return false;
+  });
 
   var MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   function fmtDate(s, m) {
@@ -656,7 +739,7 @@
     return "विद्यार्थी #" + srNo;
   }
 
-  // 3. EXACT PHOTO MATCHING LOGIC (Same as Make ID Card Pro)
+  // 3. EXACT PHOTO MATCHING LOGIC
   function getStudentPhotoUrl(st, el) {
     if (st.photo_url) return st.photo_url;
     let row = st.student_data || {};
@@ -910,19 +993,19 @@
     });
   }
 
-  // 6. EXACT PROOF PREVIEW ENGINE (Matches Make ID Card Pro Logic with Photo, Signature & Font)
+  // 6. CLEAN PROOF PREVIEW ENGINE (Matches Original Card, No Watermark, No Cross, Save Blocked)
   function openProofModal(stId) {
     let st = studentsData.find(s => s.id === stId);
     if (!st) return;
 
     let container = document.getElementById('proofCardContainer');
-    container.innerHTML = "";
+    // Clear old elements but keep save-blocker-overlay intact
+    container.innerHTML = '<div class="save-blocker-overlay" oncontextmenu="return false;"></div>';
 
     let cfg = currentProject.template_config || {};
     let cardW = cfg.cardWidthMm || 57;
     let cardH = cfg.cardHeightMm || 89;
 
-    // Scale calculation for mobile screen preview
     let maxW = window.innerWidth * 0.88;
     let maxH = window.innerHeight * 0.72;
     let k = Math.min(maxW / cardW, maxH / cardH);
@@ -1022,6 +1105,7 @@
     } else {
       let dispName = getStudentDisplayName(row, st.sr_no);
       container.innerHTML = `
+        <div class="save-blocker-overlay" oncontextmenu="return false;"></div>
         <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:100%; color:#000; text-align:center; padding:15px;">
           <h3 style="margin:0;">${dispName}</h3>
           <p style="margin:5px 0;">Roll No: ${st.sr_no}</p>
