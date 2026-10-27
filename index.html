@@ -56,7 +56,6 @@
     
     #videoElement { width: 100%; height: 100%; object-fit: cover; }
     
-    /* Face Guide Overlay */
     .face-guide-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; justify-content: center; align-items: center; z-index: 101; }
     .face-guide-box { width: 70vw; height: calc(70vw * 1.25); max-width: 290px; max-height: 360px; border: 2.5px dashed #10b981; border-radius: 14px; position: relative; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.48); }
     .face-guide-box::after { content: "चेहरा या बॉक्समध्ये ठेवा"; position: absolute; bottom: -28px; left: 50%; transform: translateX(-50%); color: #fff; font-size: 12px; white-space: nowrap; font-weight: 500; text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
@@ -82,9 +81,9 @@
 
   <!-- 1. LOGIN SCREEN -->
   <div id="loginView">
-    <h2 style="color: #f59e0b; margin-top: 0;">School Login</h2>
-    <p style="color: #9ca3af; font-size: 13px; margin-bottom: 25px;">फोटो व माहिती भरण्यासाठी Job ID आणि Password टाका</p>
-    <input type="text" id="inputJobId" class="input-box" placeholder="Job ID (उदा. 361248)" inputmode="numeric">
+    <h2 id="loginTitle" style="color: #f59e0b; margin-top: 0; transition: color 0.3s;">School Login</h2>
+    <p id="loginSubtitle" style="color: #9ca3af; font-size: 13px; margin-bottom: 25px;">फोटो व माहिती भरण्यासाठी Job ID आणि Password टाका</p>
+    <input type="text" id="inputJobId" class="input-box" placeholder="Job ID (उदा. 361248)" inputmode="numeric" oninput="checkJobName()">
     <input type="password" id="inputPin" class="input-box" placeholder="Login Password" inputmode="numeric">
     <button class="btn btn-login" onclick="login()">Login करा</button>
   </div>
@@ -183,6 +182,30 @@
   let editingStudentId = null;
   let isNewStudentMode = false;
 
+  // DYNAMIC SCHOOL NAME ON JOB ID INPUT
+  async function checkJobName() {
+    let jId = document.getElementById('inputJobId').value.trim();
+    let titleEl = document.getElementById('loginTitle');
+    let subEl = document.getElementById('loginSubtitle');
+
+    if (jId.length >= 6) {
+      const { data, error } = await client.from('projects').select('project_name').eq('id', jId).single();
+      if (data && data.project_name) {
+        titleEl.innerText = data.project_name;
+        titleEl.style.color = "#10b981";
+        subEl.innerText = "शाळेचे नाव ओळखले आहे. आता पासवर्ड टाका.";
+      } else {
+        titleEl.innerText = "School Login";
+        titleEl.style.color = "#f59e0b";
+        subEl.innerText = "फोटो व माहिती भरण्यासाठी Job ID आणि Password टाका";
+      }
+    } else {
+      titleEl.innerText = "School Login";
+      titleEl.style.color = "#f59e0b";
+      subEl.innerText = "फोटो व माहिती भरण्यासाठी Job ID आणि Password टाका";
+    }
+  }
+
   // AUTO DETECT STUDENT NAME
   function getStudentDisplayName(data, srNo) {
     if (!data) return "विद्यार्थी #" + srNo;
@@ -218,7 +241,6 @@
 
   function validateDOBFormat(dateString) {
     if (!dateString) return false;
-    // Format check DD-MM-YYYY or DD/MM/YYYY
     let regex = /^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/;
     let match = dateString.trim().match(regex);
     if (!match) return false;
@@ -443,7 +465,7 @@
     });
   }
 
-  // ADD NEW STUDENT MODAL
+  // ADD NEW STUDENT
   function openAddStudentModal() {
     isNewStudentMode = true;
     editingStudentId = null;
@@ -509,7 +531,7 @@
     isNewStudentMode = false;
   }
 
-  // SAVE WITH STRICT VALIDATIONS
+  // SAVE WITH VALIDATION
   async function saveStudentData() {
     let cols = isNewStudentMode 
       ? ((currentProject.columns && currentProject.columns.length > 0) ? currentProject.columns : availableColumns)
@@ -517,14 +539,12 @@
 
     let updatedData = {};
 
-    // 1. Gather Data & Check Validations
     for (let col of cols) {
       let el = document.getElementById(`edit_${col}`);
       let val = el ? el.value.trim() : "";
 
-      // Mobile Validation
       if (isMobileColumn(col) && val !== "") {
-        let cleanNumber = val.replace(/\D/g, ""); // strip non-digits
+        let cleanNumber = val.replace(/\D/g, "");
         if (cleanNumber.length !== 10) {
           alert(`⚠️ एरर: '${col}' मध्ये बरोबर १० अंकी मोबाईल नंबर असणे आवश्यक आहे!\n\nतुम्ही टाकलेला नंबर: ${val} (${cleanNumber.length} अंक)`);
           el.focus();
@@ -533,9 +553,7 @@
         val = cleanNumber;
       }
 
-      // DOB Validation
       if (isDobColumn(col) && val !== "") {
-        // Normalize slashes to hyphens
         let normalizedDate = val.replace(/\//g, "-");
         if (!validateDOBFormat(normalizedDate)) {
           alert(`⚠️ एरर: '${col}' चा फॉर्मॅट चुकीचा आहे!\n\nकृपया जन्मतारीख DD-MM-YYYY फॉर्मॅटमध्ये टाका.\nउदा. 15-08-2015`);
@@ -548,7 +566,6 @@
       updatedData[col] = val;
     }
 
-    // 2. Save into Database
     if (isNewStudentMode) {
       let nextRoll = studentsData.length + 1;
       let rollVal = updatedData["अनुक्रमांक"] || updatedData["Roll No"] || nextRoll;
@@ -673,6 +690,11 @@
     currentProject = null;
     document.getElementById('listView').style.display = 'none';
     document.getElementById('loginView').style.display = 'block';
+    document.getElementById('loginTitle').innerText = "School Login";
+    document.getElementById('loginTitle').style.color = "#f59e0b";
+    document.getElementById('loginSubtitle').innerText = "फोटो व माहिती भरण्यासाठी Job ID आणि Password टाका";
+    document.getElementById('inputJobId').value = "";
+    document.getElementById('inputPin').value = "";
     document.getElementById('headerBadge').innerText = "Offline Portal";
   }
 </script>
