@@ -269,7 +269,7 @@
       cursor: pointer; 
     }
 
-    /* Regular Clean Proof Preview Modal (Without Watermark) */
+    /* Regular Clean Proof Preview Modal (Matches Picture 2) */
     #proofModal { 
       display: none; 
       position: fixed; 
@@ -295,7 +295,6 @@
       -webkit-user-select: none;
       -webkit-touch-callout: none;
     }
-    /* Invisible shield over card to prevent drag, long press, or Save Image */
     .save-blocker-overlay {
       position: absolute;
       top: 0;
@@ -550,7 +549,7 @@
     <div id="studentContainer"></div>
   </div>
 
-  <!-- 3. CLEAN PROOF PREVIEW (No Watermark, Save Image & Screenshot Blocked) -->
+  <!-- 3. EXACT PROOF PREVIEW (Matches Picture 2) -->
   <div id="proofModal">
     <div style="display:flex; justify-content:space-between; align-items:center; width:100%; max-width:330px; margin-bottom:12px;">
       <span style="font-size:14px; color:#f59e0b; font-weight:bold;">आयडी कार्ड प्रिव्ह्यू (ID Card Preview)</span>
@@ -616,6 +615,10 @@
 
   const PHOTO_REGEX = /photo|image|pic|img/i;
 
+  function norm(s) {
+    return String(s || '').trim().toLowerCase().replace(/^.*[\\/]/, '').replace(/\.[a-z0-9]+$/, '');
+  }
+
   // --- STRICT ANTI-SCREENSHOT & IMAGE SAVE BLOCKERS ---
   function triggerBlackout() {
     let shield = document.getElementById('blackoutShield');
@@ -626,7 +629,6 @@
     setTimeout(() => { shield.style.display = 'none'; }, 1800);
   }
 
-  // Key-combination screenshot blockers (PrintScreen, Win+Shift+S, Ctrl+P, it.)
   window.addEventListener("keyup", function(e) {
     if (e.key === "PrintScreen" || e.keyCode === 44) {
       triggerBlackout();
@@ -642,7 +644,6 @@
     }
   });
 
-  // Mobile blur detection (jevha user screenshot sathi power+volume dabto kiva window defocus hote)
   window.addEventListener("blur", function() {
     let modal = document.getElementById('proofModal');
     if (modal && modal.style.display === 'flex') {
@@ -650,7 +651,6 @@
     }
   });
 
-  // Long press aani drag block (Save Image nako mhanun)
   window.addEventListener("touchstart", function(e) {
     if (e.target.closest('#proofCardContainer')) {
       e.target.oncontextmenu = function(ev) { ev.preventDefault(); return false; };
@@ -739,16 +739,20 @@
     return "विद्यार्थी #" + srNo;
   }
 
-  // 3. EXACT PHOTO MATCHING LOGIC
+  // 3. EXACT PHOTO MATCHING (Matches Make ID Card Pro Logic)
   function getStudentPhotoUrl(st, el) {
     if (st.photo_url) return st.photo_url;
     let row = st.student_data || {};
-    if (el && el.field && row[el.field]) return row[el.field];
+    if (el && (el.field || el.column) && row[el.field || el.column]) return row[el.field || el.column];
     for (let k in row) {
       if (PHOTO_REGEX.test(k) && row[k]) {
         let val = row[k].toString().trim();
         if (val.startsWith("http") || val.startsWith("blob:") || val.startsWith("data:")) return val;
       }
+    }
+    // Fallback: If template has a sample photo URL uploaded from software
+    if (currentProject && currentProject.template_config && currentProject.template_config.samplePhotoUrl) {
+      return currentProject.template_config.samplePhotoUrl;
     }
     return "";
   }
@@ -993,13 +997,12 @@
     });
   }
 
-  // 6. CLEAN PROOF PREVIEW ENGINE (Matches Original Card, No Watermark, No Cross, Save Blocked)
+  // 6. EXACT PROOF PREVIEW ENGINE (Matches Picture 2 with Photo, Signature & Font)
   function openProofModal(stId) {
     let st = studentsData.find(s => s.id === stId);
     if (!st) return;
 
     let container = document.getElementById('proofCardContainer');
-    // Clear old elements but keep save-blocker-overlay intact
     container.innerHTML = '<div class="save-blocker-overlay" oncontextmenu="return false;"></div>';
 
     let cfg = currentProject.template_config || {};
@@ -1050,13 +1053,13 @@
 
         var filterStr = 'brightness(' + (el.p_bright || 100) + '%) contrast(' + (el.p_contrast || 100) + '%) saturate(' + (el.p_sat || 100) + '%)';
 
-        // SIGNATURE OR LOGO IMAGE
+        // SIGNATURE OR LOGO IMAGE (Exact Principal Sign Overlay)
         if (el.type === 'image' || el.src) {
           if (el.rad) d.style.borderRadius = (el.rad * k) + 'px';
           if (el.bs > 0) d.style.border = (el.bs * k) + 'px solid ' + (el.bc || '#000');
           d.innerHTML = '<img src="' + el.src + '" style="object-fit:' + (el.pfit || 'contain') + ';filter:' + filterStr + '">';
 
-        // PHOTO BOX
+        // PHOTO BOX (Matches Picture 2 student photo)
         } else if (el.type === 'photo') {
           var u = getStudentPhotoUrl(st, el);
           if (el.rad) d.style.borderRadius = (el.rad * k) + 'px';
@@ -1068,7 +1071,7 @@
             d.innerHTML = '<div style="font-size:11px;color:#64748b;margin:auto;font-weight:bold;">फोटो नाही</div>';
           }
 
-        // TEXT ELEMENT
+        // TEXT ELEMENT (Matches Picture 2 blue color, font size & alignment)
         } else {
           var pt = (el.fontSize || el.size || 8) * 0.3528 * k;
           var t = document.createElement('span');
@@ -1080,7 +1083,7 @@
           d.appendChild(t);
           
           d.style.fontSize = pt + 'px';
-          d.style.color = el.color || '#000000';
+          d.style.color = el.color || '#0000cc'; // Matches original blue color
           d.style.fontFamily = "'" + (el.fontFamily || el.font || 'Segoe UI') + "','Nirmala UI','Mangal','Noto Sans Devanagari',sans-serif";
           d.style.fontWeight = (el.bold || el.fontWeight === 'bold') ? '700' : '400';
           d.style.fontStyle = (el.italic || el.fontStyle === 'italic') ? 'italic' : 'normal';
