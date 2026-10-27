@@ -5,73 +5,492 @@
   <title>Mauli Graphics - Mobile Camera Portal</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    * { box-sizing: border-box; font-family: 'Noto Sans Devanagari', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
-    body { background: #12131c; color: #fff; margin: 0; padding: 0; }
-    .header { background: #1f2133; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2f324d; position: sticky; top: 0; z-index: 10; }
-    .header h1 { font-size: 16px; margin: 0; color: #f59e0b; letter-spacing: 0.5px; }
-    .badge { background: #2563eb; color: #fff; font-size: 11px; padding: 3px 8px; border-radius: 12px; font-weight: bold; }
+    * { 
+      box-sizing: border-box; 
+      font-family: 'Noto Sans Devanagari', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+      -webkit-tap-highlight-color: transparent; 
+    }
+    body { 
+      background: #12131c; 
+      color: #fff; 
+      margin: 0; 
+      padding: 0; 
+      user-select: none; 
+      -webkit-user-select: none; 
+    }
+    .header { 
+      background: #1f2133; 
+      padding: 14px 16px; 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      border-bottom: 1px solid #2f324d; 
+      position: sticky; 
+      top: 0; 
+      z-index: 10; 
+    }
+    .header h1 { 
+      font-size: 16px; 
+      margin: 0; 
+      color: #f59e0b; 
+      letter-spacing: 0.5px; 
+    }
+    .badge { 
+      background: #2563eb; 
+      color: #fff; 
+      font-size: 11px; 
+      padding: 3px 8px; 
+      border-radius: 12px; 
+      font-weight: bold; 
+    }
 
     /* Login View */
-    #loginView { padding: 30px 20px; max-width: 400px; margin: 40px auto 0; text-align: center; }
-    .input-box { width: 100%; padding: 12px; margin-bottom: 14px; border-radius: 8px; border: 1px solid #3b3f5c; background: #1a1c29; color: #fff; font-size: 15px; outline: none; }
-    .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer; transition: 0.2s; }
-    .btn-login { background: #2563eb; color: #fff; }
-    .btn-logout { background: #ef4444; color: #fff; padding: 6px 12px; font-size: 12px; border-radius: 6px; border: none; cursor: pointer; }
-    .btn-add-student { background: #10b981; color: #fff; font-size: 13px; font-weight: bold; padding: 8px 12px; border-radius: 6px; border: none; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+    #loginView { 
+      padding: 30px 20px; 
+      max-width: 400px; 
+      margin: 40px auto 0; 
+      text-align: center; 
+    }
+    .input-box { 
+      width: 100%; 
+      padding: 12px; 
+      margin-bottom: 14px; 
+      border-radius: 8px; 
+      border: 1px solid #3b3f5c; 
+      background: #1a1c29; 
+      color: #fff; 
+      font-size: 15px; 
+      outline: none; 
+    }
+    .input-box:focus {
+      border-color: #3b82f6;
+    }
+    .btn { 
+      width: 100%; 
+      padding: 12px; 
+      border: none; 
+      border-radius: 8px; 
+      font-weight: bold; 
+      font-size: 15px; 
+      cursor: pointer; 
+      transition: 0.2s; 
+    }
+    .btn-login { 
+      background: #2563eb; 
+      color: #fff; 
+    }
+    .btn-logout { 
+      background: #ef4444; 
+      color: #fff; 
+      padding: 6px 12px; 
+      font-size: 12px; 
+      border-radius: 6px; 
+      border: none; 
+      cursor: pointer; 
+    }
+    .btn-add-student { 
+      background: #10b981; 
+      color: #fff; 
+      font-size: 13px; 
+      font-weight: bold; 
+      padding: 8px 12px; 
+      border-radius: 6px; 
+      border: none; 
+      cursor: pointer; 
+      display: flex; 
+      align-items: center; 
+      gap: 5px; 
+    }
 
     /* Controls & Dynamic Filters Section */
-    .filter-section { background: #1a1c29; border: 1px solid #2c3049; border-radius: 10px; padding: 12px; margin-bottom: 14px; }
-    .filter-toggle-btn { background: #32354e; color: #cbd5e1; border: 1px solid #4b5563; font-size: 12px; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 8px; }
-    .column-picker { display: none; background: #12131c; padding: 10px; border-radius: 8px; margin-top: 8px; border: 1px dashed #4b5563; }
-    .col-checkbox-label { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #cbd5e1; margin-right: 12px; margin-bottom: 6px; cursor: pointer; }
+    .filter-section { 
+      background: #1a1c29; 
+      border: 1px solid #2c3049; 
+      border-radius: 10px; 
+      padding: 12px; 
+      margin-bottom: 14px; 
+    }
+    .filter-toggle-btn { 
+      background: #32354e; 
+      color: #cbd5e1; 
+      border: 1px solid #4b5563; 
+      font-size: 12px; 
+      padding: 6px 10px; 
+      border-radius: 6px; 
+      cursor: pointer; 
+      font-weight: bold; 
+      width: 100%; 
+      margin-top: 8px; 
+    }
+    .column-picker { 
+      display: none; 
+      background: #12131c; 
+      padding: 10px; 
+      border-radius: 8px; 
+      margin-top: 8px; 
+      border: 1px dashed #4b5563; 
+    }
+    .col-checkbox-label { 
+      display: inline-flex; 
+      align-items: center; 
+      gap: 6px; 
+      font-size: 12px; 
+      color: #cbd5e1; 
+      margin-right: 12px; 
+      margin-bottom: 6px; 
+      cursor: pointer; 
+    }
     
-    .dynamic-dropdown-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-top: 8px; }
-    .filter-select { width: 100%; padding: 9px; border-radius: 7px; border: 1px solid #3b3f5c; background: #12131c; color: #fff; font-size: 13px; outline: none; }
+    .dynamic-dropdown-grid { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); 
+      gap: 8px; 
+      margin-top: 8px; 
+    }
+    .filter-select { 
+      width: 100%; 
+      padding: 9px; 
+      border-radius: 7px; 
+      border: 1px solid #3b3f5c; 
+      background: #12131c; 
+      color: #fff; 
+      font-size: 13px; 
+      outline: none; 
+    }
     
-    .total-counter-bar { display: flex; justify-content: space-between; align-items: center; background: #232538; padding: 8px 12px; border-radius: 6px; margin-top: 10px; font-size: 12px; border-left: 4px solid #10b981; }
+    .total-counter-bar { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      background: #232538; 
+      padding: 8px 12px; 
+      border-radius: 6px; 
+      margin-top: 10px; 
+      font-size: 12px; 
+      border-left: 4px solid #10b981; 
+    }
 
     /* Student List View */
-    #listView { display: none; padding: 12px; padding-bottom: 50px; }
-    .student-card { background: #1a1c29; border: 1px solid #2c3049; border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-    .student-card.done { border-color: #10b981; background: #13221f; }
-    .st-info { flex: 1; min-width: 0; }
-    .st-info h4 { margin: 0 0 4px 0; font-size: 15px; color: #f3f4f6; word-break: break-word; }
-    .st-info p { margin: 0; font-size: 12px; color: #9ca3af; }
-    .st-badge { display: inline-block; background: #32354e; color: #93c5fd; font-size: 11px; font-weight: bold; padding: 2px 6px; border-radius: 4px; margin-right: 5px; margin-top: 3px; }
+    #listView { 
+      display: none; 
+      padding: 12px; 
+      padding-bottom: 60px; 
+    }
+    .student-card { 
+      background: #1a1c29; 
+      border: 1px solid #2c3049; 
+      border-radius: 10px; 
+      padding: 12px 14px; 
+      margin-bottom: 10px; 
+      display: flex; 
+      align-items: center; 
+      justify-content: space-between; 
+      gap: 8px; 
+    }
+    .student-card.done { 
+      border-color: #10b981; 
+      background: #13221f; 
+    }
+    .st-info { 
+      flex: 1; 
+      min-width: 0; 
+    }
+    .st-info h4 { 
+      margin: 0 0 4px 0; 
+      font-size: 15px; 
+      color: #f3f4f6; 
+      word-break: break-word; 
+    }
+    .st-info p { 
+      margin: 0; 
+      font-size: 12px; 
+      color: #9ca3af; 
+    }
+    .st-badge { 
+      display: inline-block; 
+      background: #32354e; 
+      color: #93c5fd; 
+      font-size: 11px; 
+      font-weight: bold; 
+      padding: 2px 6px; 
+      border-radius: 4px; 
+      margin-right: 5px; 
+      margin-top: 3px; 
+    }
 
-    .action-group { display: flex; gap: 6px; align-items: center; }
-    .btn-edit { background: #4b5563; color: #fff; border: none; padding: 9px 12px; border-radius: 7px; font-weight: bold; font-size: 13px; cursor: pointer; }
-    .btn-camera { background: #2563eb; color: #fff; border: none; padding: 9px 12px; border-radius: 7px; font-weight: bold; font-size: 13px; cursor: pointer; }
-    .btn-done { background: #10b981; color: #fff; border: none; padding: 9px 12px; border-radius: 7px; font-weight: bold; font-size: 13px; cursor: pointer; }
+    .action-group { 
+      display: flex; 
+      gap: 5px; 
+      align-items: center; 
+    }
+    .btn-edit { 
+      background: #4b5563; 
+      color: #fff; 
+      border: none; 
+      padding: 8px 10px; 
+      border-radius: 6px; 
+      font-weight: bold; 
+      font-size: 12px; 
+      cursor: pointer; 
+    }
+    .btn-preview { 
+      background: #8b5cf6; 
+      color: #fff; 
+      border: none; 
+      padding: 8px 10px; 
+      border-radius: 6px; 
+      font-weight: bold; 
+      font-size: 12px; 
+      cursor: pointer; 
+    }
+    .btn-camera { 
+      background: #2563eb; 
+      color: #fff; 
+      border: none; 
+      padding: 8px 10px; 
+      border-radius: 6px; 
+      font-weight: bold; 
+      font-size: 12px; 
+      cursor: pointer; 
+    }
+    .btn-done { 
+      background: #10b981; 
+      color: #fff; 
+      border: none; 
+      padding: 8px 10px; 
+      border-radius: 6px; 
+      font-weight: bold; 
+      font-size: 12px; 
+      cursor: pointer; 
+    }
 
-    /* Camera Fullscreen View */
-    #cameraView { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 100; flex-direction: column; }
-    .cam-header { position: absolute; top: 15px; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; padding: 0 16px; z-index: 102; }
-    .cam-student-name { background: rgba(0,0,0,0.65); padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: bold; color: #fff; }
-    .btn-close-cam { background: rgba(239,68,68,0.85); color: #fff; border: none; width: 34px; height: 34px; border-radius: 50%; font-size: 16px; font-weight: bold; cursor: pointer; }
+    /* Security Proof Preview Modal */
+    #proofModal { 
+      display: none; 
+      position: fixed; 
+      top: 0; 
+      left: 0; 
+      width: 100%; 
+      height: 100%; 
+      background: rgba(0,0,0,0.92); 
+      z-index: 300; 
+      justify-content: center; 
+      align-items: center; 
+      flex-direction: column; 
+      padding: 15px; 
+    }
+    .proof-box { 
+      position: relative; 
+      max-width: 90vw; 
+      max-height: 75vh; 
+      box-shadow: 0 20px 50px rgba(0,0,0,0.8); 
+      border: 2px solid #4b5563; 
+      border-radius: 8px; 
+      overflow: hidden; 
+      background: #fff; 
+    }
+    #proofCanvas { 
+      display: block; 
+      max-width: 100%; 
+      height: auto; 
+      pointer-events: none; 
+    }
     
-    #videoElement { width: 100%; height: 100%; object-fit: cover; }
-    
-    .face-guide-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; justify-content: center; align-items: center; z-index: 101; }
-    .face-guide-box { width: 70vw; height: calc(70vw * 1.25); max-width: 290px; max-height: 360px; border: 2.5px dashed #10b981; border-radius: 14px; position: relative; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.48); }
-    .face-guide-box::after { content: "चेहरा या बॉक्समध्ये ठेवा"; position: absolute; bottom: -28px; left: 50%; transform: translateX(-50%); color: #fff; font-size: 12px; white-space: nowrap; font-weight: 500; text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
+    /* Security Overlay Protection */
+    .anti-screenshot-shield { 
+      position: absolute; 
+      top: 0; 
+      left: 0; 
+      width: 100%; 
+      height: 100%; 
+      pointer-events: none; 
+      background: repeating-linear-gradient(45deg, rgba(239,68,68,0.12), rgba(239,68,68,0.12) 15px, rgba(0,0,0,0) 15px, rgba(0,0,0,0) 30px); 
+    }
+    .watermark-text { 
+      position: absolute; 
+      top: 50%; 
+      left: 50%; 
+      transform: translate(-50%, -50%) rotate(-35deg); 
+      font-size: 19px; 
+      font-weight: 800; 
+      color: rgba(255, 255, 255, 0.38); 
+      text-shadow: 1px 1px 4px rgba(0,0,0,0.85); 
+      white-space: nowrap; 
+      pointer-events: none; 
+      text-align: center; 
+      line-height: 1.4; 
+    }
 
-    .cam-controls { position: absolute; bottom: 25px; left: 0; right: 0; display: flex; justify-content: center; align-items: center; z-index: 102; }
-    .btn-snap { width: 72px; height: 72px; background: #fff; border: 4px solid #2563eb; border-radius: 50%; outline: none; box-shadow: 0 0 20px rgba(0,0,0,0.6); cursor: pointer; }
-    .btn-snap:active { transform: scale(0.92); }
+    /* Blackout Curtain on PrintScreen */
+    #blackoutScreen { 
+      display: none; 
+      position: fixed; 
+      top: 0; 
+      left: 0; 
+      width: 100vw; 
+      height: 100vh; 
+      background: #000; 
+      z-index: 9999; 
+      color: #ef4444; 
+      text-align: center; 
+      padding-top: 40vh; 
+      font-size: 20px; 
+      font-weight: bold; 
+    }
 
-    /* Edit / Add Modal Box */
-    #editModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.82); z-index: 200; padding: 20px; align-items: center; justify-content: center; }
-    .modal-content { background: #1f2133; padding: 20px; border-radius: 12px; max-width: 480px; width: 100%; max-height: 85vh; overflow-y: auto; border: 1px solid #3b3f5c; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-    .modal-content h3 { color: #f59e0b; margin-top: 0; margin-bottom: 15px; font-size: 17px; }
-    .field-hint { font-size: 11px; color: #9ca3af; margin-top: 2px; margin-bottom: 6px; display: block; }
+    /* Camera Fullscreen */
+    #cameraView { 
+      display: none; 
+      position: fixed; 
+      top: 0; 
+      left: 0; 
+      width: 100%; 
+      height: 100%; 
+      background: #000; 
+      z-index: 100; 
+      flex-direction: column; 
+    }
+    .cam-header { 
+      position: absolute; 
+      top: 15px; 
+      left: 0; 
+      right: 0; 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      padding: 0 16px; 
+      z-index: 102; 
+    }
+    .cam-student-name { 
+      background: rgba(0,0,0,0.65); 
+      padding: 6px 14px; 
+      border-radius: 20px; 
+      font-size: 13px; 
+      font-weight: bold; 
+      color: #fff; 
+    }
+    .btn-close-cam { 
+      background: rgba(239,68,68,0.85); 
+      color: #fff; 
+      border: none; 
+      width: 34px; 
+      height: 34px; 
+      border-radius: 50%; 
+      font-size: 16px; 
+      font-weight: bold; 
+      cursor: pointer; 
+    }
+    #videoElement { 
+      width: 100%; 
+      height: 100%; 
+      object-fit: cover; 
+    }
+    .face-guide-container { 
+      position: absolute; 
+      top: 0; 
+      left: 0; 
+      width: 100%; 
+      height: 100%; 
+      pointer-events: none; 
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      z-index: 101; 
+    }
+    .face-guide-box { 
+      width: 70vw; 
+      height: calc(70vw * 1.25); 
+      max-width: 290px; 
+      max-height: 360px; 
+      border: 2.5px dashed #10b981; 
+      border-radius: 14px; 
+      position: relative; 
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.48); 
+    }
+    .face-guide-box::after { 
+      content: "चेहरा या बॉक्समध्ये ठेवा"; 
+      position: absolute; 
+      bottom: -28px; 
+      left: 50%; 
+      transform: translateX(-50%); 
+      color: #fff; 
+      font-size: 12px; 
+      white-space: nowrap; 
+      font-weight: 500; 
+      text-shadow: 0 1px 3px rgba(0,0,0,0.8); 
+    }
+    .cam-controls { 
+      position: absolute; 
+      bottom: 25px; 
+      left: 0; 
+      right: 0; 
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      z-index: 102; 
+    }
+    .btn-snap { 
+      width: 72px; 
+      height: 72px; 
+      background: #fff; 
+      border: 4px solid #2563eb; 
+      border-radius: 50%; 
+      outline: none; 
+      cursor: pointer; 
+      box-shadow: 0 0 20px rgba(0,0,0,0.6); 
+    }
+    .btn-snap:active { 
+      transform: scale(0.92); 
+    }
+
+    /* Edit / Add Modal */
+    #editModal { 
+      display: none; 
+      position: fixed; 
+      top: 0; 
+      left: 0; 
+      width: 100%; 
+      height: 100%; 
+      background: rgba(0,0,0,0.82); 
+      z-index: 200; 
+      padding: 20px; 
+      align-items: center; 
+      justify-content: center; 
+    }
+    .modal-content { 
+      background: #1f2133; 
+      padding: 20px; 
+      border-radius: 12px; 
+      max-width: 480px; 
+      width: 100%; 
+      max-height: 85vh; 
+      overflow-y: auto; 
+      border: 1px solid #3b3f5c; 
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+    }
+    .modal-content h3 { 
+      color: #f59e0b; 
+      margin-top: 0; 
+      margin-bottom: 15px; 
+      font-size: 17px; 
+    }
+    .field-hint { 
+      font-size: 11px; 
+      color: #9ca3af; 
+      margin-top: 2px; 
+      margin-bottom: 6px; 
+      display: block; 
+    }
   </style>
 </head>
-<body>
+<body oncontextmenu="return false;">
+
+  <!-- Screen protection on screenshot keys -->
+  <div id="blackoutScreen">⚠️ SCREENSHOT NOT ALLOWED</div>
 
   <!-- HEADER -->
   <div class="header">
@@ -105,6 +524,7 @@
     <div class="filter-section">
       <input type="text" id="searchInput" class="input-box" style="margin-bottom:0;" placeholder="🔍 रोल नंबर किंवा नावाने शोधा..." oninput="applyAllFilters()">
       
+      <!-- Base Filter Row -->
       <div style="display:flex; gap:8px; margin-top:8px;">
         <select id="statusFilter" class="filter-select" onchange="applyAllFilters()">
           <option value="ALL">सर्व स्थिती (All Status)</option>
@@ -114,15 +534,18 @@
         <button class="filter-toggle-btn" style="flex:1; margin-top:0;" onclick="toggleColumnPicker()">⚙️ सानुकूल फिल्टर्स (Columns)</button>
       </div>
 
+      <!-- Column Checkbox Chooser -->
       <div id="columnPicker" class="column-picker">
         <div style="font-size:12px; color:#f59e0b; font-weight:bold; margin-bottom:8px;">फिल्टर करण्यासाठी कॉलम निवडा (Tick करा):</div>
         <div id="checkboxContainer"></div>
       </div>
 
+      <!-- Container where active checked dropdowns will appear -->
       <div id="dynamicDropdownsContainer" class="dynamic-dropdown-grid"></div>
 
+      <!-- Live Total Summary -->
       <div class="total-counter-bar">
-        <div><b>एकूण निकाल:</b> <span id="filteredCount" style="color:#38bdf8; font-weight:bold;">0</span> विद्यार्थी</div>
+        <div><b>एकूण निकाल:</b> <span id="filteredCount" style="color:#38bdf8; font-weight:bold;">0</span> विद्यार्थी सापडले</div>
         <div style="color:#10b981;"><b>पूर्ण:</b> <span id="filteredDoneCount">0</span> | <span style="color:#f87171;"><b>बाकी:</b> <span id="filteredPendingCount">0</span></span></div>
       </div>
     </div>
@@ -130,7 +553,22 @@
     <div id="studentContainer"></div>
   </div>
 
-  <!-- 3. CAMERA FULLSCREEN -->
+  <!-- 3. PROOF PREVIEW MODAL (Anti-Screenshot Protected) -->
+  <div id="proofModal">
+    <div style="display:flex; justify-content:space-between; width:100%; max-width:320px; margin-bottom:10px;">
+      <span style="font-size:13px; color:#f59e0b; font-weight:bold;">सुरक्षित प्रूफ प्रिव्ह्यू (Proof Only)</span>
+      <button style="background:#ef4444; color:#fff; border:none; padding:4px 10px; border-radius:4px; font-weight:bold; cursor:pointer;" onclick="closeProofModal()">✕ बंद करा</button>
+    </div>
+    
+    <div class="proof-box">
+      <canvas id="proofCanvas"></canvas>
+      <div class="anti-screenshot-shield"></div>
+      <div class="watermark-text" id="watermarkJobLabel">FOR PROOF PURPOSE ONLY<br>MAULI GRAPHICS</div>
+    </div>
+    <div style="font-size:11px; color:#9ca3af; margin-top:8px; text-align:center;">* स्पेलिंग आणि माहिती तपासण्यासाठी प्रिव्ह्यू (प्रिंटिंगसाठी नाही)</div>
+  </div>
+
+  <!-- 4. CAMERA FULLSCREEN -->
   <div id="cameraView">
     <div class="cam-header">
       <div id="activeStudentLabel" class="cam-student-name">Student Name</div>
@@ -139,6 +577,7 @@
 
     <video id="videoElement" autoplay playsinline></video>
 
+    <!-- Face Guide Frame -->
     <div class="face-guide-container">
       <div class="face-guide-box" id="guideBox"></div>
     </div>
@@ -148,7 +587,7 @@
     </div>
   </div>
 
-  <!-- 4. EDIT / ADD MODAL -->
+  <!-- 5. EDIT / ADD MODAL -->
   <div id="editModal">
     <div class="modal-content">
       <h3 id="modalTitle">विद्यार्थ्याची माहिती बदला (Edit)</h3>
@@ -182,7 +621,33 @@
   let editingStudentId = null;
   let isNewStudentMode = false;
 
-  // DYNAMIC SCHOOL NAME ON JOB ID INPUT
+  // 1. ANTI-SCREENSHOT & SNIP DETECTORS
+  window.addEventListener("keyup", function(e) {
+    if (e.key === "PrintScreen" || e.keyCode === 44) {
+      triggerBlackout();
+    }
+  });
+
+  window.addEventListener("keydown", function(e) {
+    // Block Ctrl+P (Print), Ctrl+S (Save), Ctrl+U (Source), Ctrl+Shift+I (Inspect)
+    if ((e.ctrlKey && (e.key === 'p' || e.key === 's' || e.key === 'u')) || 
+        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'S' || e.key === 'C'))) {
+      e.preventDefault();
+      triggerBlackout();
+      return false;
+    }
+  });
+
+  function triggerBlackout() {
+    let screen = document.getElementById('blackoutScreen');
+    screen.style.display = 'block';
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText("Screenshots are protected by Mauli Graphics.");
+    }
+    setTimeout(() => { screen.style.display = 'none'; }, 2000);
+  }
+
+  // 2. DYNAMIC SCHOOL NAME ON JOB ID INPUT
   async function checkJobName() {
     let jId = document.getElementById('inputJobId').value.trim();
     let titleEl = document.getElementById('loginTitle');
@@ -193,7 +658,7 @@
       if (data && data.project_name) {
         titleEl.innerText = data.project_name;
         titleEl.style.color = "#10b981";
-        subEl.innerText = "शाळेचे नाव ओळखले आहे. आता पासवर्ड टाका.";
+        subEl.innerText = "शाळा ओळखली आहे! आता पासवर्ड टाका.";
       } else {
         titleEl.innerText = "School Login";
         titleEl.style.color = "#f59e0b";
@@ -206,7 +671,7 @@
     }
   }
 
-  // AUTO DETECT STUDENT NAME
+  // 3. AUTO DETECT STUDENT NAME
   function getStudentDisplayName(data, srNo) {
     if (!data) return "विद्यार्थी #" + srNo;
     let possible = [
@@ -228,7 +693,7 @@
     return "विद्यार्थी #" + srNo;
   }
 
-  // VALIDATION HELPER FUNCTIONS
+  // 4. VALIDATION HELPER FUNCTIONS
   function isMobileColumn(colName) {
     let low = colName.toLowerCase();
     return low.includes("mobile") || low.includes("phone") || low.includes("contact") || low.includes("मोबाईल") || low.includes("फोन") || low.includes("संपर्क");
@@ -256,7 +721,7 @@
     return true;
   }
 
-  // LOGIN FUNCTION
+  // 5. LOGIN FUNCTION
   async function login() {
     let jId = document.getElementById('inputJobId').value.trim();
     let pin = document.getElementById('inputPin').value.trim();
@@ -275,6 +740,7 @@
     currentProject = pData;
     document.getElementById('headerBadge').innerText = "Job: " + jId;
     document.getElementById('schoolHeading').innerText = pData.project_name;
+    document.getElementById('watermarkJobLabel').innerHTML = `FOR PROOF ONLY<br>JOB: ${jId} - MAULI GRAPHICS`;
     
     document.getElementById('loginView').style.display = 'none';
     document.getElementById('listView').style.display = 'block';
@@ -282,7 +748,7 @@
     fetchStudents();
   }
 
-  // FETCH STUDENTS
+  // 6. FETCH STUDENTS
   async function fetchStudents() {
     const { data: sList, error: sErr } = await client.from('students').select('*').eq('project_id', currentProject.id).order('sr_no', { ascending: true });
     if(sErr) {
@@ -290,7 +756,7 @@
       return;
     }
 
-    studentsData = sList;
+    studentsData = sList || [];
 
     if (currentProject.columns && currentProject.columns.length > 0) {
       availableColumns = currentProject.columns.filter(col => {
@@ -298,18 +764,23 @@
         return !low.includes("photo") && !low.includes("address") && !low.includes("पत्ता");
       });
     } else if (studentsData.length > 0 && studentsData[0].student_data) {
-      availableColumns = Object.keys(studentsData[0].student_data);
+      availableColumns = Object.keys(studentsData[0].student_data).filter(col => {
+        let low = col.toLowerCase();
+        return !low.includes("photo") && !low.includes("address") && !low.includes("पत्ता");
+      });
     }
 
     buildColumnCheckboxes();
     applyAllFilters();
   }
 
+  // 7. TOGGLE COLUMN PICKER
   function toggleColumnPicker() {
     let p = document.getElementById('columnPicker');
     p.style.display = (p.style.display === 'block') ? 'none' : 'block';
   }
 
+  // 8. BUILD DYNAMIC COLUMN CHECKBOXES
   function buildColumnCheckboxes() {
     let container = document.getElementById('checkboxContainer');
     container.innerHTML = "";
@@ -349,6 +820,7 @@
     applyAllFilters();
   }
 
+  // 9. RENDER DYNAMIC DROPDOWNS
   function renderDynamicDropdowns() {
     let dContainer = document.getElementById('dynamicDropdownsContainer');
     dContainer.innerHTML = "";
@@ -379,6 +851,7 @@
     });
   }
 
+  // 10. APPLY SEARCH, FILTERS & LIVE TOTALS
   function applyAllFilters() {
     let searchVal = document.getElementById('searchInput').value.toLowerCase().trim();
     let statusVal = document.getElementById('statusFilter').value;
@@ -422,6 +895,7 @@
     renderList();
   }
 
+  // 11. RENDER STUDENT CARDS
   function renderList() {
     let container = document.getElementById('studentContainer');
     container.innerHTML = "";
@@ -455,6 +929,7 @@
           </p>
         </div>
         <div class="action-group">
+          <button class="btn-preview" onclick="openProofModal('${st.id}')">👁️ प्रिव्ह्यू</button>
           <button class="btn-edit" onclick="openEditModal('${st.id}')">✏️ माहिती</button>
           <button class="${isDone ? 'btn-done' : 'btn-camera'}" onclick="openCamera('${st.id}')">
             ${isDone ? "🔄 बदला" : "📷 फोटो"}
@@ -465,7 +940,81 @@
     });
   }
 
-  // ADD NEW STUDENT
+  // 12. OPEN ANTI-SCREENSHOT PROOF MODAL
+  function openProofModal(stId) {
+    let st = studentsData.find(s => s.id === stId);
+    if (!st) return;
+
+    let canvas = document.getElementById('proofCanvas');
+    let ctx = canvas.getContext('2d');
+
+    // Low-res proof canvas (240x375 approx 57x89mm)
+    let w = 240;
+    let h = 375;
+    canvas.width = w;
+    canvas.height = h;
+
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, w, h);
+
+    let sData = st.student_data || {};
+    let dispName = getStudentDisplayName(sData, st.sr_no);
+
+    // Photo Box Placeholder
+    ctx.fillStyle = "#e2e8f0";
+    ctx.strokeStyle = "#94a3b8";
+    ctx.fillRect(60, 45, 120, 150);
+    ctx.strokeRect(60, 45, 120, 150);
+
+    if (st.photo_url) {
+      let img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = function() {
+        ctx.drawImage(img, 60, 45, 120, 150);
+        drawWatermark(ctx, w, h);
+      };
+      img.src = st.photo_url;
+    } else {
+      ctx.fillStyle = "#64748b";
+      ctx.font = "12px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("PHOTO PENDING", 120, 125);
+      drawWatermark(ctx, w, h);
+    }
+
+    // Text details
+    ctx.fillStyle = "#000000";
+    ctx.font = "bold 13px 'Libre Baskerville', serif";
+    ctx.textAlign = "center";
+    ctx.fillText(dispName.substring(0, 24), 120, 225);
+
+    ctx.font = "11px sans-serif";
+    ctx.fillStyle = "#334155";
+    let subInfo = (sData["STD"] || sData["इयत्ता / तुकडी"] || "") + " | Roll: " + st.sr_no;
+    ctx.fillText(subInfo, 120, 248);
+
+    let dob = sData["D.O.B"] || sData["जन्मदिनांक"] || "";
+    if (dob) ctx.fillText("DOB: " + dob, 120, 270);
+
+    document.getElementById('proofModal').style.display = 'flex';
+  }
+
+  function drawWatermark(ctx, w, h) {
+    ctx.save();
+    ctx.strokeStyle = "rgba(220, 38, 38, 0.35)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, 0); ctx.lineTo(w, h);
+    ctx.moveTo(0, h); ctx.lineTo(w, 0);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function closeProofModal() {
+    document.getElementById('proofModal').style.display = 'none';
+  }
+
+  // 13. ADD NEW STUDENT MODAL
   function openAddStudentModal() {
     isNewStudentMode = true;
     editingStudentId = null;
@@ -497,7 +1046,7 @@
     document.getElementById('editModal').style.display = 'flex';
   }
 
-  // EDIT STUDENT MODAL
+  // 14. EDIT STUDENT MODAL
   function openEditModal(stId) {
     isNewStudentMode = false;
     editingStudentId = stId;
@@ -531,7 +1080,7 @@
     isNewStudentMode = false;
   }
 
-  // SAVE WITH VALIDATION
+  // 15. SAVE WITH STRICT VALIDATIONS
   async function saveStudentData() {
     let cols = isNewStudentMode 
       ? ((currentProject.columns && currentProject.columns.length > 0) ? currentProject.columns : availableColumns)
@@ -543,6 +1092,7 @@
       let el = document.getElementById(`edit_${col}`);
       let val = el ? el.value.trim() : "";
 
+      // Mobile check
       if (isMobileColumn(col) && val !== "") {
         let cleanNumber = val.replace(/\D/g, "");
         if (cleanNumber.length !== 10) {
@@ -553,6 +1103,7 @@
         val = cleanNumber;
       }
 
+      // DOB check
       if (isDobColumn(col) && val !== "") {
         let normalizedDate = val.replace(/\//g, "-");
         if (!validateDOBFormat(normalizedDate)) {
@@ -604,7 +1155,7 @@
     applyAllFilters();
   }
 
-  // OPEN CAMERA
+  // 16. OPEN CAMERA
   async function openCamera(studentId) {
     activeStudent = studentsData.find(s => s.id === studentId);
     let displayName = getStudentDisplayName(activeStudent.student_data, activeStudent.sr_no);
@@ -631,7 +1182,7 @@
     document.getElementById('cameraView').style.display = 'none';
   }
 
-  // CAPTURE & CROP
+  // 17. CAPTURE & UPLOAD (300 DPI CROP)
   async function captureAndUpload() {
     let video = document.getElementById('videoElement');
     let canvas = document.getElementById('cropCanvas');
@@ -686,6 +1237,7 @@
     }, 'image/jpeg', 0.92);
   }
 
+  // 18. LOGOUT
   function logout() {
     currentProject = null;
     document.getElementById('listView').style.display = 'none';
