@@ -287,12 +287,24 @@
       border-radius: 6px; 
       overflow: hidden; 
       background: #fff center/cover no-repeat; 
+      color: #000;
     }
     .proof-el { 
       position: absolute; 
       overflow: hidden; 
       display: flex; 
       user-select: none; 
+    }
+    .proof-el.ph {
+      background: #ddd;
+      color: #888;
+      align-items: center;
+      justify-content: center;
+    }
+    .proof-el img {
+      width: 100%;
+      height: 100%;
+      display: block;
     }
 
     /* Camera Fullscreen */
@@ -499,7 +511,7 @@
     <div id="studentContainer"></div>
   </div>
 
-  <!-- 3. CLEAN REGULAR PROOF PREVIEW MODAL (Exact Matching Original Card) -->
+  <!-- 3. EXACT PROOF PREVIEW MODAL -->
   <div id="proofModal">
     <div style="display:flex; justify-content:space-between; align-items:center; width:100%; max-width:330px; margin-bottom:12px;">
       <span style="font-size:14px; color:#f59e0b; font-weight:bold;">आयडी कार्ड प्रिव्ह्यू (ID Card Preview)</span>
@@ -507,7 +519,7 @@
     </div>
     
     <div id="proofCardContainer" class="proof-card-stage"></div>
-    <div style="font-size:12px; color:#94a3b8; margin-top:10px; text-align:center;">* स्पेलिंग, पत्ता आणि फोटो तपासून घ्या</div>
+    <div style="font-size:12px; color:#94a3b8; margin-top:10px; text-align:center;">* स्पेलिंग, सही आणि फोटो तपासून घ्या</div>
   </div>
 
   <!-- 4. CAMERA FULLSCREEN -->
@@ -567,6 +579,37 @@
     return String(s || '').trim().toLowerCase().replace(/^.*[\\/]/, '').replace(/\.[a-z0-9]+$/, '');
   }
 
+  var MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  function fmtDate(s, m) {
+    var t = /^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})$/.exec(s);
+    if (!t || !m) return s;
+    var d = t[1].padStart(2, '0'), o = t[2].padStart(2, '0'), y = t[3];
+    if (m === 'a') return d + '/' + o + '/' + y;
+    if (m === 'b') return d + '.' + o + '.' + y;
+    if (m === 'c') return d + o + y;
+    if (m === 'd') return d + ' ' + (MN[Number(o) - 1] || o) + ' ' + y;
+    if (m === 'e') return d + '-' + o + '-' + y.slice(2);
+    return s;
+  }
+
+  var cs = function(s, m) {
+    if (m === 'u') return s.toUpperCase();
+    if (m === 'l') return s.toLowerCase();
+    if (m === 't') return s.toLowerCase().replace(/(^|\s)\S/g, function(c) { return c.toUpperCase(); });
+    return s;
+  };
+
+  function fitAll(card) {
+    card.querySelectorAll('[data-fit]').forEach(function(d) {
+      var fs = parseFloat(d.style.fontSize);
+      var min = fs * 0.3;
+      while (fs > min && (d.scrollWidth > d.clientWidth + 1 || d.scrollHeight > d.clientHeight + 1)) {
+        fs -= 0.4;
+        d.style.fontSize = fs + 'px';
+      }
+    });
+  }
+
   // 1. AUTO DETECT SCHOOL NAME
   async function checkJobName() {
     let jId = document.getElementById('inputJobId').value.trim();
@@ -613,14 +656,15 @@
     return "विद्यार्थी #" + srNo;
   }
 
-  // 3. EXACT PHOTO MATCHING (Matches Make ID Card Pro logic)
-  function getStudentPhotoUrl(st) {
+  // 3. EXACT PHOTO MATCHING LOGIC (Same as Make ID Card Pro)
+  function getStudentPhotoUrl(st, el) {
     if (st.photo_url) return st.photo_url;
-    let sData = st.student_data || {};
-    for (let k in sData) {
-      if (PHOTO_REGEX.test(k) && sData[k]) {
-        let val = sData[k].toString().trim();
-        if (val.startsWith("http")) return val;
+    let row = st.student_data || {};
+    if (el && el.field && row[el.field]) return row[el.field];
+    for (let k in row) {
+      if (PHOTO_REGEX.test(k) && row[k]) {
+        let val = row[k].toString().trim();
+        if (val.startsWith("http") || val.startsWith("blob:") || val.startsWith("data:")) return val;
       }
     }
     return "";
@@ -866,7 +910,7 @@
     });
   }
 
-  // 6. EXACT MATCHING REGULAR CARD PREVIEW (Clean, No Watermark, No Cross)
+  // 6. EXACT PROOF PREVIEW ENGINE (Matches Make ID Card Pro Logic with Photo, Signature & Font)
   function openProofModal(stId) {
     let st = studentsData.find(s => s.id === stId);
     if (!st) return;
@@ -878,13 +922,15 @@
     let cardW = cfg.cardWidthMm || 57;
     let cardH = cfg.cardHeightMm || 89;
 
-    // Scale mm to mobile screen preview size
-    let scale = Math.min((window.innerWidth * 0.82) / cardW, (window.innerHeight * 0.68) / cardH);
-    if (scale < 3.5) scale = 3.5;
-    if (scale > 5.5) scale = 5.5;
+    // Scale calculation for mobile screen preview
+    let maxW = window.innerWidth * 0.88;
+    let maxH = window.innerHeight * 0.72;
+    let k = Math.min(maxW / cardW, maxH / cardH);
+    if (k < 4.0) k = 4.0;
+    if (k > 6.0) k = 6.0;
 
-    let stageW = Math.round(cardW * scale);
-    let stageH = Math.round(cardH * scale);
+    let stageW = Math.round(cardW * k);
+    let stageH = Math.round(cardH * k);
 
     container.style.width = stageW + "px";
     container.style.height = stageH + "px";
@@ -896,62 +942,85 @@
       container.style.backgroundColor = "#ffffff";
     }
 
-    let sData = st.student_data || {};
+    let row = st.student_data || {};
     let elements = cfg.elements || [];
 
     if (elements.length > 0) {
       elements.forEach(el => {
-        let div = document.createElement('div');
-        div.className = "proof-el";
-        div.style.left = (el.left * scale) + "px";
-        div.style.top = (el.top * scale) + "px";
-        div.style.width = (el.width * scale) + "px";
-        div.style.height = (el.height * scale) + "px";
-        div.style.zIndex = el.zIndex || 1;
-        div.style.transform = `rotate(${el.rotate || 0}deg)`;
+        let d = document.createElement('div');
+        d.className = 'proof-el' + (el.type === 'photo' ? ' ph' : '');
+        
+        let elX = el.left !== undefined ? el.left : (el.x || 0);
+        let elY = el.top !== undefined ? el.top : (el.y || 0);
+        let elW = el.width !== undefined ? el.width : (el.w || 20);
+        let elH = el.height !== undefined ? el.height : (el.h || 10);
+        
+        d.style.left = (elX * k) + 'px';
+        d.style.top = (elY * k) + 'px';
+        d.style.width = (elW * k) + 'px';
+        d.style.height = (elH * k) + 'px';
+        d.style.opacity = ((el.opacity !== undefined ? el.opacity : (el.op || 100)) / 100);
+        d.style.zIndex = el.zIndex || el.z || 1;
+        d.style.transform = `rotate(${el.rotate || el.rot || 0}deg)`;
 
-        if (el.type === 'photo') {
-          div.style.border = "1px solid #cbd5e1";
-          div.style.background = "#e2e8f0";
+        if (el.mul) d.style.mixBlendMode = 'multiply';
 
-          let pUrl = getStudentPhotoUrl(st);
-          if (pUrl) {
-            div.innerHTML = `<img src="${pUrl}" style="width:100%; height:100%; object-fit:cover; display:block;">`;
-          } else {
-            div.innerHTML = `<div style="font-size:11px; color:#64748b; margin:auto; font-weight:bold;">फोटो नाही</div>`;
-          }
+        var filterStr = 'brightness(' + (el.p_bright || 100) + '%) contrast(' + (el.p_contrast || 100) + '%) saturate(' + (el.p_sat || 100) + '%)';
 
-        } else {
-          // Exact text formatting as set in Make ID Card Pro
-          let txt = el.fixedText || "";
-          if (el.column && sData[el.column] !== undefined) {
-            txt = sData[el.column].toString();
-          }
+        // SIGNATURE OR LOGO IMAGE
+        if (el.type === 'image' || el.src) {
+          if (el.rad) d.style.borderRadius = (el.rad * k) + 'px';
+          if (el.bs > 0) d.style.border = (el.bs * k) + 'px solid ' + (el.bc || '#000');
+          d.innerHTML = '<img src="' + el.src + '" style="object-fit:' + (el.pfit || 'contain') + ';filter:' + filterStr + '">';
 
-          let pt = (el.fontSize || 8) * 0.3528 * scale;
-          div.style.fontSize = pt + "px";
-          div.style.color = el.color || "#000000";
-          div.style.fontFamily = `'${el.fontFamily || "Segoe UI"}', 'Noto Sans Devanagari', sans-serif`;
-          div.style.fontWeight = el.bold ? "700" : "400";
-          div.style.fontStyle = el.italic ? "italic" : "normal";
-          div.style.lineHeight = el.lineHeight || 1.15;
-          div.style.alignItems = { top: 'flex-start', middle: 'center', bottom: 'flex-end' }[el.verticalAlign || 'middle'];
+        // PHOTO BOX
+        } else if (el.type === 'photo') {
+          var u = getStudentPhotoUrl(st, el);
+          if (el.rad) d.style.borderRadius = (el.rad * k) + 'px';
+          if (el.bs > 0) d.style.border = (el.bs * k) + 'px solid ' + (el.bc || '#cbd5e1');
           
-          let span = document.createElement('span');
-          span.style.display = "block";
-          span.style.width = "100%";
-          span.style.textAlign = el.align || "center";
-          span.style.whiteSpace = el.wrapText ? "pre-wrap" : "nowrap";
-          span.innerText = txt;
+          if (u) {
+            d.innerHTML = '<img src="' + u + '" style="object-fit:' + (el.pfit || 'cover') + ';filter:' + filterStr + '">';
+          } else {
+            d.innerHTML = '<div style="font-size:11px;color:#64748b;margin:auto;font-weight:bold;">फोटो नाही</div>';
+          }
 
-          div.appendChild(span);
+        // TEXT ELEMENT
+        } else {
+          var pt = (el.fontSize || el.size || 8) * 0.3528 * k;
+          var t = document.createElement('span');
+          var colVal = el.column || el.field || '';
+          var rawText = colVal ? (row[colVal] !== undefined ? row[colVal] : '') : (el.fixedText || el.text || '');
+          
+          t.textContent = cs(fmtDate(String(rawText), el.df || ''), el.cs || (el.textTransform === 'uppercase' ? 'u' : ''));
+          t.style.cssText = 'display:block;width:100%;text-align:' + (el.align || el.ha || 'left') + ';white-space:' + (el.wrapText || el.wrap ? 'pre-wrap' : 'nowrap') + ';text-decoration:' + (el.underline || el.ul ? 'underline' : 'none');
+          d.appendChild(t);
+          
+          d.style.fontSize = pt + 'px';
+          d.style.color = el.color || '#000000';
+          d.style.fontFamily = "'" + (el.fontFamily || el.font || 'Segoe UI') + "','Nirmala UI','Mangal','Noto Sans Devanagari',sans-serif";
+          d.style.fontWeight = (el.bold || el.fontWeight === 'bold') ? '700' : '400';
+          d.style.fontStyle = (el.italic || el.fontStyle === 'italic') ? 'italic' : 'normal';
+          d.style.lineHeight = el.lineHeight || el.lh || 1.15;
+          d.style.letterSpacing = ((el.letterSpacing || el.ls || 0) * 0.3528 * k) + 'px';
+          d.style.alignItems = {top:'flex-start', middle:'center', bottom:'flex-end'}[el.verticalAlign || el.va || 'top'];
+          
+          if (el.strokeSize > 0 || el.ss > 0) {
+            var ss = el.strokeSize || el.ss;
+            var sc = el.strokeColor || el.sc || '#fff';
+            d.style.webkitTextStroke = (ss * 0.3528 * k) + 'px ' + sc;
+            d.style.paintOrder = 'stroke fill';
+          }
+          if (el.autoShrink || el.fit) d.dataset.fit = 1;
         }
 
-        container.appendChild(div);
+        container.appendChild(d);
       });
 
+      fitAll(container);
+
     } else {
-      let dispName = getStudentDisplayName(sData, st.sr_no);
+      let dispName = getStudentDisplayName(row, st.sr_no);
       container.innerHTML = `
         <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:100%; color:#000; text-align:center; padding:15px;">
           <h3 style="margin:0;">${dispName}</h3>
